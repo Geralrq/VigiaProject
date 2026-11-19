@@ -1,0 +1,54 @@
+[project]
+name = "vigia-backend"
+version = "0.1.0"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "alembic>=1.20.1",
+    "fastapi[standard]>=0.165.0",
+    "geoalchemy2>=0.21.0",
+    "httpx>=0.28.1",
+    "psycopg[binary]>=3.3.9",
+    "pydantic-settings>=2.16.3",
+    "pyjwt[crypto]>=2.15.1",
+    "qrcode>=8.2",
+    "reportlab>=5.1.0",
+    "sentinelhub>=3.12.1",
+    "shapely>=2.2.0",
+    "sqlalchemy>=2.1.9",
+]
+
+[dependency-groups]
+dev = [
+    "import-linter>=2.17",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "ruff>=0.17.6",
+]
+
+[tool.importlinter]
+root_package = "app"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "domain and application stay framework-free"
+type = "forbidden"
+source_modules = [
+    "app.monitoring.domain", "app.monitoring.application",
+    "app.alerts.domain", "app.alerts.application",
+    "app.reports.domain", "app.reports.application",
+    "app.inspections.domain", "app.inspections.application",
+    "app.notifications.domain", "app.notifications.application",
+    "app.shared.domain", "app.shared.application",
+]
+forbidden_modules = ["fastapi", "sqlalchemy", "httpx", "sentinelhub"]
+allow_indirect_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+

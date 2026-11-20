@@ -15,6 +15,7 @@ from app.bootstrap import (
     create_app,
     provide_alert_repository,
     provide_anomaly_repository,
+    provide_candidate_finder,
     provide_carbon_factor_repository,
     provide_chat_link_repository,
     provide_critical_confidence,
@@ -23,11 +24,17 @@ from app.bootstrap import (
     provide_fire_hotspot_source,
     provide_index_reading_repository,
     provide_link_code_signer,
+    provide_mission_config,
+    provide_mission_repository,
     provide_notifiers,
     provide_profile_repository,
     provide_recipient_finder,
+    provide_report_repository,
     provide_satellite_index,
+    provide_score_repository,
+    provide_session,
     provide_set_telegram_chat,
+    provide_storage,
     provide_telegram_bot_username,
     provide_telegram_chat,
     provide_telegram_webhook_secret,
@@ -41,7 +48,9 @@ from app.monitoring.adapters.outbound.satellite.demo_satellite_adapter import (
 from app.notifications.application.use_cases.telegram_linking import SetTelegramChat
 from app.notifications.domain.link_code import LinkCodeSigner
 from app.notifications.domain.notice import Channel
+from app.reports.application.use_cases.missions import MissionConfig
 from app.shared.adapters.outbound.auth.jwks_token_verifier import JwksTokenVerifier
+from app.shared.adapters.outbound.storage.in_memory_storage import InMemoryStorage
 from tests.fakes import (
     InMemoryAnomalyRepository,
     InMemoryCarbonFactorRepository,
@@ -56,6 +65,12 @@ from tests.fakes_alerts import (
     InMemoryAlertRepository,
     InMemoryChatLinkRepository,
     RecordingNotifier,
+)
+from tests.fakes_reports import (
+    FakeCandidateFinder,
+    InMemoryMissionRepository,
+    InMemoryReportRepository,
+    InMemoryScoreRepository,
 )
 
 ISSUER = "https://test-project.supabase.co/auth/v1"
@@ -78,6 +93,10 @@ class StaticJWKClient(PyJWKClient):
 
     def fetch_data(self) -> Any:
         return self._jwks
+
+
+def _no_database():
+    raise RuntimeError("tests must not touch the database: override this provider")
 
 
 @pytest.fixture(autouse=True)
@@ -185,6 +204,33 @@ def chat_links() -> InMemoryChatLinkRepository:
 
 
 @pytest.fixture
+def storage() -> InMemoryStorage:
+    return InMemoryStorage()
+
+
+@pytest.fixture
+def reports() -> InMemoryReportRepository:
+    return InMemoryReportRepository()
+
+
+@pytest.fixture
+def missions(
+    anomalies: InMemoryAnomalyRepository, zones: InMemoryZoneRepository
+) -> InMemoryMissionRepository:
+    return InMemoryMissionRepository(anomalies, zones)
+
+
+@pytest.fixture
+def candidates() -> FakeCandidateFinder:
+    return FakeCandidateFinder()
+
+
+@pytest.fixture
+def scores() -> InMemoryScoreRepository:
+    return InMemoryScoreRepository()
+
+
+@pytest.fixture
 def link_signer() -> LinkCodeSigner:
     return LinkCodeSigner(LINK_SECRET)
 
@@ -203,6 +249,11 @@ def client(
     telegram_chat: FakeTelegramChat,
     chat_links: InMemoryChatLinkRepository,
     link_signer: LinkCodeSigner,
+    storage: InMemoryStorage,
+    reports: InMemoryReportRepository,
+    missions: InMemoryMissionRepository,
+    candidates: FakeCandidateFinder,
+    scores: InMemoryScoreRepository,
 ) -> TestClient:
     """App wired to in-memory repos and the demo (offline) satellite/FIRMS adapters."""
     readings = InMemoryIndexReadingRepository()
@@ -228,6 +279,13 @@ def client(
         provide_telegram_webhook_secret: lambda: WEBHOOK_SECRET,
         provide_telegram_bot_username: lambda: BOT_USERNAME,
         provide_critical_confidence: lambda: 0.75,
+        provide_storage: lambda: storage,
+        provide_report_repository: lambda: reports,
+        provide_mission_repository: lambda: missions,
+        provide_candidate_finder: lambda: candidates,
+        provide_score_repository: lambda: scores,
+        provide_mission_config: lambda: MissionConfig(),
+        provide_session: _no_database,  # any provider left un-overridden fails loudly
         provide_set_telegram_chat: lambda: SetTelegramChat(chat_links, allow_manual=True),
     }
     app.dependency_overrides.update(overrides)

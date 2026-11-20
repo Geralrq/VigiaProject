@@ -13,6 +13,7 @@ from app.monitoring.application.use_cases.scan_zones import ScanZones
 from app.monitoring.domain.anomaly import Anomaly, AnomalyState, AnomalyType
 from app.monitoring.domain.impact import ImpactEstimate
 from app.monitoring.domain.zone import Zone
+from app.shared.domain.events import AnomalyConfirmed
 from app.shared.domain.user import Role
 from tests.conftest import CRON_SECRET, TokenFactory
 from tests.fakes import (
@@ -235,13 +236,13 @@ def scan_use_case(
     )
 
 
-async def test_a_scan_below_the_threshold_publishes_nothing(
+async def test_a_scan_below_the_threshold_announces_no_confirmation(
     anomalies: InMemoryAnomalyRepository, seeded_zones: InMemoryZoneRepository
 ) -> None:
     events = RecordingPublisher()
     summary = await scan_use_case(anomalies, seeded_zones, events).execute()
-    assert len(summary.anomalies) == 2  # detected, but 0.87 / 0.91 < 0.95
-    assert events.events == []
+    assert len(summary.anomalies) == 2  # detected, but 0.645 / 0.79 < 0.95
+    assert not [e for e in events.events if isinstance(e, AnomalyConfirmed)]
 
 
 async def test_a_scan_does_not_reannounce_a_false_positive(

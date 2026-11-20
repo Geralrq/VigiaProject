@@ -3,8 +3,8 @@ import logging
 import httpx
 
 from app.notifications.domain.notice import (
-    AlertNotice,
     Channel,
+    Notice,
     NotificationDeliveryError,
     compose_text,
 )
@@ -36,7 +36,7 @@ class TelegramAdapter:
         self._public_url = public_url
         self._client = httpx.Client(base_url=API_BASE, timeout=TIMEOUT, transport=transport)
 
-    def send(self, recipient: Recipient, notice: AlertNotice) -> None:
+    def send(self, recipient: Recipient, notice: Notice) -> None:
         if recipient.telegram_chat_id is None:
             return  # nothing linked: not a failure
         self.send_text(recipient.telegram_chat_id, compose_text(notice, self._public_url))

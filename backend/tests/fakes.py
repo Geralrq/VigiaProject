@@ -40,6 +40,9 @@ class InMemoryZoneRepository:
     def add(self, zone: Zone) -> None:
         self.zones.append(zone)
 
+    def update_thresholds(self, zone: Zone) -> None:
+        self.zones = [zone if z.id == zone.id else z for z in self.zones]
+
 
 def _in_dates(day: date, query: GeoQuery) -> bool:
     return (query.start is None or day >= query.start) and (query.end is None or day <= query.end)
@@ -78,13 +81,17 @@ class InMemoryAnomalyRepository:
     def __init__(self, anomalies: Sequence[Anomaly] = ()) -> None:
         self.rows: dict[UUID, Anomaly] = {a.id: a for a in anomalies}
 
-    def save(self, anomaly: Anomaly) -> None:
+    def save(self, anomaly: Anomaly) -> bool:
         existing = self.rows.get(anomaly.id)
         if existing is not None:  # same semantics as the SQL upsert
             anomaly = dataclasses.replace(
                 anomaly, state=existing.state, detected_at=existing.detected_at
             )
         self.rows[anomaly.id] = anomaly
+        return existing is None
+
+    def get_for_update(self, anomaly_id: UUID) -> Anomaly | None:
+        return self.rows.get(anomaly_id)
 
     def get(self, anomaly_id: UUID) -> Anomaly | None:
         return self.rows.get(anomaly_id)

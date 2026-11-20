@@ -4,7 +4,7 @@ from uuid import UUID
 import shapely
 from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import shape
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.monitoring.adapters.outbound.persistence.models import ZoneModel
@@ -50,6 +50,13 @@ class SqlAlchemyZoneRepository:
     def get(self, zone_id: UUID) -> Zone | None:
         row = self._session.get(ZoneModel, zone_id)
         return to_domain(row) if row is not None else None
+
+    def update_thresholds(self, zone: Zone) -> None:
+        self._session.execute(
+            update(ZoneModel)
+            .where(ZoneModel.id == zone.id)
+            .values(umbral_ndvi=zone.ndvi_threshold, umbral_nbr=zone.nbr_threshold)
+        )
 
     def add(self, zone: Zone) -> None:
         self._session.add(to_row(zone))

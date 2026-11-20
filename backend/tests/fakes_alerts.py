@@ -6,7 +6,7 @@ from uuid import UUID
 from shapely.geometry import Point, shape
 
 from app.alerts.domain.alert import Alert, AlertDetail
-from app.notifications.domain.notice import AlertNotice, Channel, NotificationDeliveryError
+from app.notifications.domain.notice import Channel, Notice, NotificationDeliveryError
 from app.shared.domain.errors import ConflictError, NotFoundError
 from app.shared.domain.events import Recipient
 from tests.fakes import InMemoryAnomalyRepository, InMemoryZoneRepository
@@ -76,9 +76,9 @@ class RecordingNotifier:
     def __init__(self, channel: Channel, *, fails: bool = False) -> None:
         self.channel = channel
         self.fails = fails
-        self.sent: list[tuple[Recipient, AlertNotice]] = []
+        self.sent: list[tuple[Recipient, Notice]] = []
 
-    def send(self, recipient: Recipient, notice: AlertNotice) -> None:
+    def send(self, recipient: Recipient, notice: Notice) -> None:
         if self.fails:
             raise NotificationDeliveryError("canal caído")
         self.sent.append((recipient, notice))

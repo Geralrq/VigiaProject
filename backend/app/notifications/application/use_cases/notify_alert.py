@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Sequence
 
+from app.notifications.application.delivery import deliver
 from app.notifications.application.ports.notification_port import NotificationPort
 from app.notifications.domain.notice import AlertNotice
 from app.shared.domain.events import AlertCreated
@@ -26,19 +27,9 @@ class NotifyAlertRecipients:
             anomaly_type=event.anomaly_type,
             hectares=event.hectares,
         )
-        failures = 0
-        for recipient in event.recipients:
-            for notifier in self._notifiers:
-                try:
-                    notifier.send(recipient, notice)
-                except Exception:
-                    failures += 1
-                    logger.exception(
-                        "Channel %s failed for user %s (alert %s)",
-                        notifier.channel,
-                        recipient.user_id,
-                        event.alert_id,
-                    )
+        failures = deliver(
+            self._notifiers, event.recipients, notice, context=f"alert {event.alert_id}"
+        )
         logger.info(
             "Alert %s: %d recipients, %d channel failures",
             event.alert_id,

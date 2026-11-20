@@ -43,3 +43,17 @@ class AlertCreated:
     anomaly_type: str
     hectares: float
     recipients: tuple[Recipient, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class AnomalyDetected:
+    """A scan created an anomaly for the first time (re-scans never publish this)."""
+
+    anomaly_id: UUID
+    zone_id: UUID
+    zone_name: str
+    anomaly_type: str
+    confidence: float
+    hectares: float
+    geometry: dict[str, Any]
+    detected_at: datetime

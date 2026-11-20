@@ -4,7 +4,7 @@ from uuid import UUID
 import shapely
 from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import shape
-from sqlalchemy import select, update
+from sqlalchemy import literal_column, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -56,16 +56,22 @@ class SqlAlchemyAnomalyRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def save(self, anomaly: Anomaly) -> None:
+    def save(self, anomaly: Anomaly) -> bool:
         stmt = insert(AnomalyModel).values(to_values(anomaly))
         stmt = stmt.on_conflict_do_update(
             index_elements=["id"], set_={col: stmt.excluded[col] for col in REFRESHABLE}
-        )
+        ).returning(literal_column("(xmax = 0)"))  # xmax is 0 only for a freshly inserted row
         with self._session.begin_nested():
-            self._session.execute(stmt)
+            return bool(self._session.execute(stmt).scalar_one())
 
     def get(self, anomaly_id: UUID) -> Anomaly | None:
         row = self._session.get(AnomalyModel, anomaly_id)
+        return to_domain(row) if row is not None else None
+
+    def get_for_update(self, anomaly_id: UUID) -> Anomaly | None:
+        row = self._session.scalar(
+            select(AnomalyModel).where(AnomalyModel.id == anomaly_id).with_for_update()
+        )
         return to_domain(row) if row is not None else None
 
     def update_state(self, anomaly: Anomaly) -> None:

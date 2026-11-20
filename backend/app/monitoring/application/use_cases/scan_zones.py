@@ -12,7 +12,10 @@ from app.monitoring.application.ports.fire_hotspot_repository import FireHotspot
 from app.monitoring.application.ports.index_reading_repository import IndexReadingRepository
 from app.monitoring.application.ports.satellite_index_port import SatelliteIndexPort
 from app.monitoring.application.ports.zone_repository import ZoneRepository
-from app.monitoring.application.use_cases.confirm_anomaly import anomaly_confirmed_event
+from app.monitoring.application.use_cases.confirm_anomaly import (
+    anomaly_confirmed_event,
+    anomaly_detected_event,
+)
 from app.monitoring.domain.anomaly import Anomaly, AnomalyState
 from app.monitoring.domain.detection import detect_anomaly
 from app.monitoring.domain.geo import BBox
@@ -39,6 +42,7 @@ class _ZoneScanResult:
     readings: int
     hotspots: int
     anomaly: Anomaly | None
+    created: bool = False  # the anomaly row did not exist before this scan
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,7 +109,7 @@ class ScanZones:
 
         outcomes = await asyncio.gather(*(guarded(z) for z in zones))
         results = [o for o in outcomes if isinstance(o, _ZoneScanResult)]
-        self._announce_critical(results, {z.id: z.name for z in zones})
+        self._announce(results, {z.id: z.name for z in zones})
         return ScanSummary(
             window=window,
             zones_scanned=len(zones),
@@ -127,21 +131,22 @@ class ScanZones:
         )
         self._readings.save_many(readings)
         self._hotspots.save_many(hotspots)
-        if anomaly is not None:
-            self._anomalies.save(anomaly)
-        return _ZoneScanResult(len(readings), len(hotspots), anomaly)
+        created = self._anomalies.save(anomaly) if anomaly is not None else False
+        return _ZoneScanResult(len(readings), len(hotspots), anomaly, created)
 
-    def _announce_critical(
-        self, results: list[_ZoneScanResult], zone_names: dict[UUID, str]
-    ) -> None:
+    def _announce(self, results: list[_ZoneScanResult], zone_names: dict[UUID, str]) -> None:
         if self._events is None:
             return
         for result in results:
             anomaly = result.anomaly
-            if anomaly is None or anomaly.confidence < self._critical_confidence:
+            if anomaly is None:
+                continue
+            name = zone_names.get(anomaly.zone_id, "—")
+            if result.created:  # only a brand-new anomaly starts verification missions
+                self._events.publish(anomaly_detected_event(anomaly, name))
+            if anomaly.confidence < self._critical_confidence:
                 continue
             stored = self._anomalies.get(anomaly.id)  # a scan never overwrites the state
             if stored is not None and stored.state is AnomalyState.FALSE_POSITIVE:
                 continue
-            name = zone_names.get(anomaly.zone_id, "—")
             self._events.publish(anomaly_confirmed_event(anomaly, name))

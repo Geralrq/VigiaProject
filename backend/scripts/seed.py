@@ -24,6 +24,7 @@ from app.monitoring.adapters.outbound.persistence.models import (
     ZoneModel,
 )
 from app.shared.adapters.outbound.persistence.engine import build_engine
+from app.shared.adapters.outbound.persistence.models import ProfileModel
 from app.shared.settings import get_settings
 
 NAMESPACE = uuid.UUID("5c1f6c52-7a0e-4f0a-9d3e-2b8f0d0c7a11")
@@ -213,6 +214,34 @@ def seed_demo_scenario(session: Session) -> None:
     )
 
 
+# Fictitious volunteers so verification missions have recipients in the demo. They are
+# CIUDADANO profiles flagged `es_demo`, placed near the demo scenario (Guaviare deforestation
+# at -72.65,1.98 and Paramillo fire at -76.05,7.18). They are not auth users: nobody can log
+# in as them. (key, nombre, (lon, lat))
+DEMO_PROFILES = [
+    ("guaviare-1", "Camila R. (demo)", (-72.66, 1.99)),  # ~1.5 km from the cleared patch
+    ("guaviare-2", "Julián C. (demo)", (-72.60, 2.02)),  # ~6.5 km
+    ("paramillo-1", "Marcela O. (demo)", (-76.04, 7.19)),  # ~1.5 km from the fire
+    ("paramillo-2", "Andrés V. (demo)", (-76.10, 7.14)),  # ~7 km
+]
+
+
+def seed_demo_profiles(session: Session) -> None:
+    for key, nombre, (lon, lat) in DEMO_PROFILES:
+        session.execute(
+            insert(ProfileModel)
+            .values(
+                id=uid("profile", key),
+                nombre=nombre,
+                rol="CIUDADANO",
+                ubicacion=from_shape(Point(lon, lat), srid=4326),
+                puntos=0,
+                es_demo=True,
+            )
+            .on_conflict_do_nothing(index_elements=["id"])
+        )
+
+
 def main() -> None:
     engine = build_engine(get_settings().database_url.get_secret_value())
     with Session(engine) as session, session.begin():
@@ -220,6 +249,7 @@ def main() -> None:
         seed_carbon_factors(session)
         seed_readings(session)
         seed_demo_scenario(session)
+        seed_demo_profiles(session)
     print("Seed applied (idempotent).")
 
 

@@ -1,14 +1,14 @@
 from typing import Protocol
 
-from app.notifications.domain.notice import AlertNotice, Channel
+from app.notifications.domain.notice import Channel, Notice
 from app.shared.domain.events import Recipient
 
 
 class NotificationPort(Protocol):
     channel: Channel
 
-    def send(self, recipient: Recipient, notice: AlertNotice) -> None:
-        """Deliver the alert to one recipient.
+    def send(self, recipient: Recipient, notice: Notice) -> None:
+        """Deliver the notice to one recipient.
 
         Raises NotificationDeliveryError on failure. A recipient the channel cannot reach
         (e.g. no Telegram chat linked) is skipped silently, not an error.

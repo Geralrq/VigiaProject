@@ -55,3 +55,15 @@ class Anomaly:
                 "Una anomalía descartada como falso positivo no puede confirmarse."
             )
         return dataclasses.replace(self, state=AnomalyState.CONFIRMED)
+
+    def start_review(self) -> "Anomaly":
+        """EN_VERIFICACION when freshly DETECTADA; any other state is returned unchanged."""
+        if self.state is AnomalyState.DETECTED:
+            return dataclasses.replace(self, state=AnomalyState.IN_REVIEW)
+        return self
+
+    def discard(self) -> "Anomaly":
+        """FALSO_POSITIVO. Idempotent; a CONFIRMADA anomaly can no longer be discarded."""
+        if self.state is AnomalyState.CONFIRMED:
+            raise DomainValidationError("Una anomalía confirmada no puede descartarse.")
+        return dataclasses.replace(self, state=AnomalyState.FALSE_POSITIVE)

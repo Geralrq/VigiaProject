@@ -1,6 +1,6 @@
 import logging
 
-from app.notifications.domain.notice import AlertNotice, Channel, compose_text
+from app.notifications.domain.notice import Channel, Notice, compose_text
 from app.shared.domain.events import Recipient
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ class SimulatedSmsAdapter:
     def __init__(self, public_url: str) -> None:
         self._public_url = public_url
 
-    def send(self, recipient: Recipient, notice: AlertNotice) -> None:
+    def send(self, recipient: Recipient, notice: Notice) -> None:
         logger.info(
             "[sms simulado] usuario=%s\n%s",
             recipient.user_id,

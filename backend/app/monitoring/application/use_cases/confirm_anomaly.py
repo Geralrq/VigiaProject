@@ -5,7 +5,7 @@ from app.monitoring.application.ports.zone_repository import ZoneRepository
 from app.monitoring.domain.anomaly import Anomaly
 from app.shared.application.ports.events import EventPublisher
 from app.shared.domain.errors import NotFoundError
-from app.shared.domain.events import AnomalyConfirmed
+from app.shared.domain.events import AnomalyConfirmed, AnomalyDetected
 
 
 def anomaly_confirmed_event(anomaly: Anomaly, zone_name: str) -> AnomalyConfirmed:
@@ -17,6 +17,19 @@ def anomaly_confirmed_event(anomaly: Anomaly, zone_name: str) -> AnomalyConfirme
         confidence=anomaly.confidence,
         hectares=anomaly.impact.hectares,
         co2_tonnes=anomaly.impact.co2_tonnes,
+        geometry=anomaly.geometry,
+        detected_at=anomaly.detected_at,
+    )
+
+
+def anomaly_detected_event(anomaly: Anomaly, zone_name: str) -> AnomalyDetected:
+    return AnomalyDetected(
+        anomaly_id=anomaly.id,
+        zone_id=anomaly.zone_id,
+        zone_name=zone_name,
+        anomaly_type=anomaly.type.value,
+        confidence=anomaly.confidence,
+        hectares=anomaly.impact.hectares,
         geometry=anomaly.geometry,
         detected_at=anomaly.detected_at,
     )

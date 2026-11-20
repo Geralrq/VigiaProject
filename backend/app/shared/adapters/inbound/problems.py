@@ -18,6 +18,7 @@ from app.shared.domain.errors import (
     DomainError,
     DomainValidationError,
     NotFoundError,
+    PayloadTooLargeError,
     ServiceUnavailableError,
 )
 
@@ -30,6 +31,7 @@ STATUS_BY_ERROR: dict[type[DomainError], int] = {
     AuthorizationError: 403,
     NotFoundError: 404,
     ConflictError: 409,
+    PayloadTooLargeError: 413,
     DomainValidationError: 422,
     ServiceUnavailableError: 503,
 }
@@ -40,6 +42,8 @@ TITLES = {
     403: "Acceso denegado",
     404: "No encontrado",
     405: "Método no permitido",
+    409: "Conflicto",
+    413: "Archivo demasiado grande",
     422: "Datos inválidos",
     500: "Error interno",
     503: "Servicio no disponible",

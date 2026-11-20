@@ -26,5 +26,9 @@ class DomainValidationError(DomainError):
     """A domain invariant was violated by the input."""
 
 
+class PayloadTooLargeError(DomainValidationError):
+    """An uploaded file exceeds the allowed size."""
+
+
 class ServiceUnavailableError(DomainError):
     """A required external dependency (e.g. the JWKS endpoint) is unreachable."""

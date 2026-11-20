@@ -31,8 +31,11 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_jwks_url: str = ""
     supabase_jwt_audience: str = "authenticated"
-    supabase_service_role_key: SecretStr = SecretStr("")
-    supabase_storage_bucket: str = "vigia"
+    # Server-side key for Supabase Storage (never sent to the browser). Old name still accepted.
+    supabase_service_key: SecretStr = Field(
+        SecretStr(""),
+        validation_alias=AliasChoices("SUPABASE_SERVICE_KEY", "SUPABASE_SERVICE_ROLE_KEY"),
+    )
 
     # Copernicus Data Space OAuth client (Sentinel Hub). Old SENTINELHUB_* names still accepted.
     sentinel_client_id: SecretStr = Field(
@@ -53,6 +56,11 @@ class Settings(BaseSettings):
     public_app_url: str = "http://localhost:3000"
     # A scan whose anomaly reaches this confidence raises AnomalyConfirmed by itself.
     critical_confidence_threshold: float = Field(0.75, ge=0, le=1)
+    # Verification missions: how far from the anomaly volunteers are searched (metres) and
+    # the points a response is worth (+ a bonus when it matches the final outcome).
+    mission_radius_m: float = Field(10_000.0, gt=0)
+    mission_base_points: int = Field(10, ge=0)
+    mission_bonus_points: int = Field(5, ge=0)
     llm_api_key: SecretStr = SecretStr("")
     llm_model: str = ""
 

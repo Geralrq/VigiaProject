@@ -6,11 +6,12 @@ import {
   useZoneReadings,
 } from "@/features/monitoring/api/queries";
 import type { Role } from "@/shared/api/types";
-import { ANOMALY_STATE_LABELS, ANOMALY_TYPE_LABELS, RISK_LABELS, formatDate, percent } from "../labels";
+import { ANOMALY_STATE_LABELS, ANOMALY_TYPE_LABELS, formatDate, percent } from "../labels";
 import type { DetailModel } from "../selection";
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
 import { ImpactCard } from "./ImpactCard";
 import { NdviChart } from "./NdviChart";
+import { RiskBadge } from "./RiskBadge";
 
 interface Props {
   detail: DetailModel;
@@ -27,10 +28,14 @@ export function DetailPanel({ detail, role, onClose }: Props) {
     role === "ADMIN" && (detail.state === "DETECTADA" || detail.state === "EN_VERIFICACION");
 
   return (
-    <aside className="panel detail-panel" aria-labelledby="detail-title">
+    <aside
+      className="panel detail-panel"
+      aria-labelledby="detail-title"
+      data-risk={detail.risk ?? undefined}
+    >
       <header>
         <h2 id="detail-title">
-          {detail.kind === "alert" ? "Alerta" : "Anomalía"} · {ANOMALY_TYPE_LABELS[detail.type]}
+          {detail.kind === "alert" ? "Alerta" : "Anomalía"} de {ANOMALY_TYPE_LABELS[detail.type].toLowerCase()}
         </h2>
         <button type="button" onClick={onClose}>
           Cerrar detalle
@@ -51,20 +56,22 @@ export function DetailPanel({ detail, role, onClose }: Props) {
             <>
               <dt>Riesgo</dt>
               <dd>
-                <span className="risk" data-level={detail.risk}>
-                  {RISK_LABELS[detail.risk]}
-                </span>
+                <RiskBadge level={detail.risk} />
               </dd>
             </>
           )}
           <dt>Confianza</dt>
-          <dd>{percent(detail.confidence)}</dd>
+          <dd className="mono">{percent(detail.confidence)}</dd>
           <dt>Detectada</dt>
-          <dd>{formatDate(detail.detectedAt)}</dd>
+          <dd>
+            <time dateTime={detail.detectedAt}>{formatDate(detail.detectedAt)}</time>
+          </dd>
           {detail.alertCreatedAt && (
             <>
               <dt>Alerta emitida</dt>
-              <dd>{formatDate(detail.alertCreatedAt)}</dd>
+              <dd>
+                <time dateTime={detail.alertCreatedAt}>{formatDate(detail.alertCreatedAt)}</time>
+              </dd>
             </>
           )}
         </dl>

@@ -19,10 +19,22 @@ export const RISK_LABELS: Record<RiskLevel, string> = {
   CRITICO: "Crítico",
 };
 
-export const percent = (value: number): string => `${Math.round(value * 100)} %`;
+// Espacio duro antes de «%»: que el número y el símbolo no se separen al cortar la línea.
+export const percent = (value: number): string => `${Math.round(value * 100)} %`;
 
 const numberFormat = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
 export const formatNumber = (value: number): string => numberFormat.format(value);
 
-const dateFormat = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" });
-export const formatDate = (iso: string): string => dateFormat.format(new Date(iso));
+const decimalFormat = new Intl.NumberFormat("es-CO", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+export const formatDecimal = (value: number): string => decimalFormat.format(value);
+
+// Las fechas puras (AAAA-MM-DD) se interpretan en UTC: formatearlas en hora local correría el día.
+const dayFormat = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: "UTC" });
+const instantFormat = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" });
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+export const formatDate = (iso: string): string =>
+  (DATE_ONLY.test(iso) ? dayFormat : instantFormat).format(new Date(iso));

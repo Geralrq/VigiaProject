@@ -175,7 +175,11 @@ export function CommandCenter() {
 
   return (
     <div className={`command-center${current ? " has-detail" : ""}`}>
-      <aside className="panel layers-panel" aria-label="Controles del mapa">
+      <h1 className="visually-hidden">Centro de comando</h1>
+      <aside className="panel layers-panel" aria-labelledby="controls-title">
+        <h2 id="controls-title" className="visually-hidden">
+          Controles del mapa
+        </h2>
         <LayerPanel
           options={layerOptions}
           active={active}

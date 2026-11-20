@@ -48,8 +48,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#contenido">
+        Saltar al contenido
+      </a>
       <header className="app-header">
-        <h1>Vigía</h1>
+        <p className="wordmark">Vigía</p>
         {items.length > 0 && (
           <nav className="app-nav" aria-label="Principal">
             <ul>
@@ -69,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {me.data && (
           <div className="app-user">
             <span>
-              {me.data.name} · {ROLE_LABELS[me.data.role]}
+              {me.data.name} <span className="role">({ROLE_LABELS[me.data.role]})</span>
             </span>
             <button type="button" onClick={() => signOut.mutate()} disabled={signOut.isPending}>
               Cerrar sesión
@@ -77,7 +80,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         )}
       </header>
-      <div className="app-main">{body}</div>
+      <main id="contenido" className="app-main" tabIndex={-1}>
+        {body}
+      </main>
     </div>
   );
 }

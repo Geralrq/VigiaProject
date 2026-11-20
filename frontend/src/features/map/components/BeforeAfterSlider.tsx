@@ -3,6 +3,8 @@
 import { useId, useState } from "react";
 import { formatDate } from "../labels";
 
+const IMAGE_SIZE = 768; // el backend entrega imágenes de hasta 768 px por lado
+
 interface Props {
   beforeUrl: string | null;
   afterUrl: string | null;
@@ -59,12 +61,20 @@ export function BeforeAfterSlider({
         {/* eslint-disable-next-line @next/next/no-img-element -- URL firmada externa */}
         <img
           src={beforeUrl}
+          width={IMAGE_SIZE}
+          height={IMAGE_SIZE}
+          loading="lazy"
+          decoding="async"
           alt={`Imagen satelital antes, ${formatDate(beforeDate)}`}
           onError={() => markBroken(beforeUrl)}
         />
         {/* eslint-disable-next-line @next/next/no-img-element -- URL firmada externa */}
         <img
           src={afterUrl}
+          width={IMAGE_SIZE}
+          height={IMAGE_SIZE}
+          loading="lazy"
+          decoding="async"
           alt={`Imagen satelital después, ${formatDate(afterDate)}`}
           style={{ clipPath: `inset(0 0 0 ${100 - position}%)` }}
           onError={() => markBroken(afterUrl)}

@@ -1,5 +1,5 @@
 import type { ZoneReadings } from "@/shared/api/types";
-import { formatDate, formatNumber } from "../labels";
+import { formatDate, formatDecimal, formatNumber } from "../labels";
 
 const WIDTH = 320;
 const HEIGHT = 170;
@@ -44,7 +44,7 @@ export function NdviChart({ data }: { data: ZoneReadings }) {
           <g key={tick}>
             <line className="chart-grid" x1={PAD.left} x2={WIDTH - PAD.right} y1={y(tick)} y2={y(tick)} />
             <text x={PAD.left - 4} y={y(tick)} textAnchor="end" dominantBaseline="middle">
-              {tick.toFixed(2)}
+              {formatDecimal(tick)}
             </text>
           </g>
         ))}
@@ -61,7 +61,12 @@ export function NdviChart({ data }: { data: ZoneReadings }) {
               y1={y(data.threshold_line)}
               y2={y(data.threshold_line)}
             />
-            <text x={WIDTH - PAD.right} y={y(data.threshold_line) - 4} textAnchor="end">
+            <text
+              className="chart-threshold-label"
+              x={WIDTH - PAD.right}
+              y={y(data.threshold_line) - 4}
+              textAnchor="end"
+            >
               Umbral
             </text>
           </g>

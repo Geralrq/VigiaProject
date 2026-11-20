@@ -24,9 +24,17 @@ export function LoginForm() {
   }
 
   return (
-    <main className="page-center">
-      <h1>Iniciar sesión en Vigía</h1>
-      <form onSubmit={onSubmit} aria-describedby={signIn.isError ? "login-error" : undefined}>
+    <main className="auth-page">
+      <h1>Vigía</h1>
+      <p className="lede">
+        Alerta temprana de deforestación e incendios. Ingresa con tu cuenta para ver el centro de
+        comando.
+      </p>
+      <form
+        onSubmit={onSubmit}
+        aria-label="Iniciar sesión"
+        aria-describedby={signIn.isError ? "login-error" : undefined}
+      >
         <div className="form-field">
           <label htmlFor="email">Correo electrónico</label>
           <input
@@ -34,6 +42,7 @@ export function LoginForm() {
             name="email"
             type="email"
             autoComplete="email"
+            spellCheck={false}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}

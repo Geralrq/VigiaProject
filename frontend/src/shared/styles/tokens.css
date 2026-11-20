@@ -1,74 +1,96 @@
 /*
- * Design tokens de Vigía. ÚNICO lugar con valores de color, espaciado, tipografía y tamaños.
- * Fase 9a: valores neutrales y funcionales. La Fase 10 reemplaza este archivo completo.
- * Ningún otro CSS/TSX debe escribir colores ni medidas literales: usar var(--token).
+ * Design tokens de Vigía — dirección A «Centro de comando» (oscuro). ÚNICA fuente de color,
+ * espaciado, tipografía y medidas. Reglas completas: .claude/skills/vigia-ui/SKILL.md
+ * Ningún otro CSS/TSX escribe valores literales: usar var(--token).
+ * Contrastes (WCAG) calculados sobre --color-surface salvo que se indique.
  */
 :root {
-  /* Superficies y texto */
-  --color-bg: #f5f5f5;
-  --color-surface: #ffffff;
-  --color-surface-muted: #ededed;
-  --color-border: #c8c8c8;
-  --color-text: #1a1a1a;
-  --color-text-muted: #505050;
-  --color-text-on-accent: #ffffff;
+  color-scheme: dark;
 
-  /* Acciones, foco y estados */
-  --color-accent: #1d4ed8;
-  --color-accent-hover: #1e40af;
-  --color-focus: #b45309;
-  --color-danger: #b91c1c;
-  --color-success: #166534;
-  --color-overlay: rgba(0, 0, 0, 0.45);
+  /* Superficies (verde-tinta) y texto */
+  --color-bg: #0c1512;
+  --color-surface: #131f1b;
+  --color-surface-raised: #1b2b25;
+  --color-text: #e6efea; /* 14,4:1 */
+  --color-text-muted: #9db3aa; /* 7,6:1 */
+  --color-border: #2c3f38; /* decorativo: separadores de 1 px */
+  --color-border-control: #6b8a7d; /* 4,5:1: bordes de controles (≥3:1) */
+  --color-overlay: rgba(12, 21, 18, 0.72);
 
-  /* Niveles de riesgo (texto sobre fondo claro con contraste AA) */
-  --risk-bajo: #166534;
-  --risk-medio: #854d0e;
-  --risk-alto: #c2410c;
-  --risk-critico: #b91c1c;
+  /* Hielo: única acción primaria, foco y selección */
+  --color-accent: #9ccbe0; /* 9,7:1 */
+  --color-accent-hover: #b7dcec;
+  --color-on-accent: #0c1512; /* 10,6:1 sobre el hielo */
+  --color-focus: #9ccbe0;
 
-  /* Datos en el mapa y los gráficos */
-  --map-zone-fill: #2563eb;
-  --map-zone-line: #1d4ed8;
-  --map-anomaly-deforestation: #92400e;
-  --map-anomaly-fire: #dc2626;
-  --map-alert-line: #7c2d12;
-  --map-report: #0f766e;
-  --map-hotspot-rgb: 234, 88, 12;
-  --chart-line: #166534;
-  --chart-threshold: #b91c1c;
-  --chart-grid: #d4d4d4;
+  /* Riesgo: el color solo significa riesgo. Texto y glifos AA sobre surface */
+  --risk-bajo: #4fc38a; /* 7,7:1 */
+  --risk-medio: #e8c03a; /* 9,7:1 */
+  --risk-alto: #f28c38; /* 6,9:1 */
+  --risk-critico: #ff6b6b; /* 6,1:1 */
+  --risk-on-fill: #0c1512; /* ≥6,7:1 sobre cualquier relleno de riesgo */
 
-  /* Espaciado */
+  /* Mapa: excepciones de tipo (no son riesgo) y datos */
+  --map-anomaly-fire: #f28c38;
+  --map-anomaly-deforestation: #d9b38c;
+  --map-zone-line: #9ccbe0;
+  --map-zone-fill: #9ccbe0;
+  --map-report: #e6efea;
+  --map-selection: #ffffff;
+  --map-hotspot-from-rgb: 232, 192, 58;
+  --map-hotspot-to-rgb: 255, 107, 107;
+  /* OSM invertido a oscuro: brillo min/max, saturación y contraste del raster */
+  --map-base-brightness-min: 0.78;
+  --map-base-brightness-max: 0.1;
+  --map-base-saturation: -0.55;
+  --map-base-contrast: 0.3;
+  --map-base-hue-rotate: 180; /* grados: la inversión vira el verde a morado; 180 lo devuelve */
+
+  /* Gráficos */
+  --chart-line: #9ccbe0;
+  --chart-threshold: #ff6b6b;
+  --chart-grid: #2c3f38;
+
+  /* Espaciado (denso: panel de control) */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.5rem;
   --space-6: 2rem;
+  --space-7: 3rem;
 
-  /* Forma */
-  --radius-1: 0.25rem;
-  --radius-2: 0.5rem;
+  /* Forma: un solo radio, sin sombras */
+  --radius: 0.125rem;
   --border-width: 1px;
+  --rail-edge-width: 3px;
   --focus-ring-width: 3px;
-  --shadow-panel: 0 1px 4px rgba(0, 0, 0, 0.25);
 
-  /* Tipografía */
-  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* Tipografía: Archivo (ancho variable) + IBM Plex Mono para instrumentos */
+  --font-display: var(--font-archivo), "Arial Narrow", system-ui, sans-serif;
+  --font-body: var(--font-archivo), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --width-display: 118%;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
   --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
   --line-height: 1.5;
+  --line-height-tight: 1.2;
+  --measure: 62ch;
 
   /* Disposición */
-  --header-height: 3.5rem;
-  --side-panel-width: 22rem;
-  --layers-panel-width: 15rem;
+  --header-height: 3rem;
+  --rail-width: 17rem;
+  --detail-width: 24rem;
   --touch-target: 2.75rem;
   --toast-width: 22rem;
-  --z-panel: 10;
+  --bp-stack: 52rem; /* referencia: el @media de base.css usa este mismo valor */
+  --z-overlay: 10;
   --z-toast: 100;
+
+  /* Movimiento: solo entrada del panel de detalle */
+  --motion-panel: 160ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 }

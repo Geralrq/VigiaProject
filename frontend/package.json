@@ -3,13 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "sync:maplibre": "node scripts/sync-maplibre-worker.mjs",
+    "predev": "npm run sync:maplibre",
     "dev": "next dev",
+    "prebuild": "npm run sync:maplibre",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "gen:api": "openapi-typescript http://localhost:8000/api/openapi.json -o src/shared/api/schema.d.ts"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.4.1",
     "@deck.gl/mapbox": "^9.4.1",
     "@supabase/supabase-js": "^2.119.2",
     "@tanstack/react-query": "^5.108.1",

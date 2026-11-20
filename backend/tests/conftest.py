@@ -12,16 +12,35 @@ from jwt.algorithms import ECAlgorithm
 
 from app.bootstrap import (
     create_app,
+    provide_anomaly_repository,
+    provide_carbon_factor_repository,
+    provide_cron_secret,
+    provide_fire_hotspot_repository,
+    provide_fire_hotspot_source,
+    provide_index_reading_repository,
     provide_profile_repository,
+    provide_satellite_index,
     provide_token_verifier,
     provide_zone_repository,
 )
+from app.monitoring.adapters.outbound.fires.demo_fire_adapter import DemoFireHotspotAdapter
+from app.monitoring.adapters.outbound.satellite.demo_satellite_adapter import (
+    DemoSatelliteIndexAdapter,
+)
 from app.shared.adapters.outbound.auth.jwks_token_verifier import JwksTokenVerifier
-from tests.fakes import InMemoryProfileRepository, InMemoryZoneRepository
+from tests.fakes import (
+    InMemoryAnomalyRepository,
+    InMemoryCarbonFactorRepository,
+    InMemoryFireHotspotRepository,
+    InMemoryIndexReadingRepository,
+    InMemoryProfileRepository,
+    InMemoryZoneRepository,
+)
 
 ISSUER = "https://test-project.supabase.co/auth/v1"
 AUDIENCE = "authenticated"
 KID = "test-key-1"
+CRON_SECRET = "test-cron-secret-0123456789"
 
 TokenFactory = Callable[..., str]
 
@@ -92,13 +111,38 @@ def zones() -> InMemoryZoneRepository:
 
 
 @pytest.fixture
+def anomalies() -> InMemoryAnomalyRepository:
+    return InMemoryAnomalyRepository()
+
+
+@pytest.fixture
+def hotspots() -> InMemoryFireHotspotRepository:
+    return InMemoryFireHotspotRepository()
+
+
+@pytest.fixture
 def client(
     verifier: JwksTokenVerifier,
     profiles: InMemoryProfileRepository,
     zones: InMemoryZoneRepository,
+    anomalies: InMemoryAnomalyRepository,
+    hotspots: InMemoryFireHotspotRepository,
 ) -> TestClient:
+    """App wired to in-memory repos and the demo (offline) satellite/FIRMS adapters."""
+    readings = InMemoryIndexReadingRepository()
+    carbon = InMemoryCarbonFactorRepository({"bosque_amazonico": 180.0})
     app = create_app()
-    app.dependency_overrides[provide_token_verifier] = lambda: verifier
-    app.dependency_overrides[provide_profile_repository] = lambda: profiles
-    app.dependency_overrides[provide_zone_repository] = lambda: zones
+    overrides = {
+        provide_token_verifier: lambda: verifier,
+        provide_profile_repository: lambda: profiles,
+        provide_zone_repository: lambda: zones,
+        provide_anomaly_repository: lambda: anomalies,
+        provide_fire_hotspot_repository: lambda: hotspots,
+        provide_index_reading_repository: lambda: readings,
+        provide_carbon_factor_repository: lambda: carbon,
+        provide_satellite_index: lambda: DemoSatelliteIndexAdapter(),
+        provide_fire_hotspot_source: lambda: DemoFireHotspotAdapter(),
+        provide_cron_secret: lambda: CRON_SECRET,
+    }
+    app.dependency_overrides.update(overrides)
     return TestClient(app)

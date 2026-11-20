@@ -27,3 +27,12 @@
   4. `adapters/inbound/<x>_schemas.py` (Pydantic, `from_domain`/`to_command`) y `<x>_router.py` con `build_<x>_router(auth, provide_...)`; sin lógica.
   5. `app/bootstrap.py`: `provide_<repo>(SessionDep)` → `provide_<caso_de_uso>` → `include_router`. Tests: fakes en `tests/fakes.py` y `app.dependency_overrides[provide_<repo>]`.
 - Sesión: una transacción por request (`Depends(scope="function")`, commit antes de responder).
+
+## Fase 4 — Motor de monitoreo satelital (monitoring, sin frontend)
+- Dominio puro: `spectral` (NDVI/NBR/NDWI, baseline mediana 60 d, delta, severidad dNBR USGS), `impact` (ha = px×0.01, CO2 = ha×tC/ha×3.67), `confidence` (0.7·|ΔNDVI|/0.4 + 0.3·foco FIRMS en zona y ventana, × (1−nubes²)), `detection`, `ScanWindow` (bloques fijos de 10 d → idempotencia por zona+ventana con id uuid5).
+- Puertos: SatelliteIndexPort, FireHotspotPort, repos de lecturas/focos/anomalías/factores de carbono. Upserts: re-escanear no duplica ni pisa `estado`. Sin migración nueva.
+- Adaptadores: Sentinel Hub Statistical (CDSE, máscara SCL, token OAuth en caché), FIRMS área (VIIRS_NOAA20_NRT, bloques de 5 d), reintentos acotados (3, backoff); demo deterministas (deforestación Guaviare 120 ha, incendio Paramillo 38 ha + 5 focos).
+- `ScanZones`: zonas activas en paralelo (Semaphore 5); un fallo por zona se reporta en el resumen y no detiene las demás.
+- API: `GET /api/jobs/scan` (Bearer CRON_SECRET, compare_digest; cron diario en vercel.json), `POST /api/admin/scan` (ADMIN), `GET /api/anomalies|hotspots` (GeoJSON; bbox, start, end, min_confidence 0..1).
+- Modo live: en `.env.local` poner `APP_MODE=live`, `SENTINEL_CLIENT_ID/SECRET` (cliente OAuth de dataspace.copernicus.eu) y `FIRMS_MAP_KEY`; `CRON_SECRET` también en Vercel. Por defecto `APP_MODE=demo`.
+- Pendiente: probar live contra las APIs reales; geometría de la anomalía = polígono de la zona (sin píxeles localizados).

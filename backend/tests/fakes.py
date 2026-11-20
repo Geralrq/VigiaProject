@@ -1,7 +1,14 @@
 """In-memory port implementations for tests (no DB, no network)."""
 
+import dataclasses
+from collections.abc import Callable, Sequence
+from datetime import date
 from uuid import UUID
 
+from app.monitoring.domain.anomaly import Anomaly
+from app.monitoring.domain.fire_hotspot import FireHotspot
+from app.monitoring.domain.geo import BBox, GeoQuery
+from app.monitoring.domain.index_reading import IndexReading
 from app.monitoring.domain.zone import Zone
 from app.shared.domain.user import Role
 
@@ -29,3 +36,97 @@ class InMemoryZoneRepository:
 
     def add(self, zone: Zone) -> None:
         self.zones.append(zone)
+
+
+def _in_dates(day: date, query: GeoQuery) -> bool:
+    return (query.start is None or day >= query.start) and (query.end is None or day <= query.end)
+
+
+class InMemoryIndexReadingRepository:
+    def __init__(self) -> None:
+        self.rows: dict[tuple[UUID, str, date], IndexReading] = {}
+
+    def save_many(self, readings: Sequence[IndexReading]) -> None:
+        for r in readings:
+            self.rows[(r.zone_id, r.index, r.observed_on)] = r
+
+
+class InMemoryFireHotspotRepository:
+    def __init__(self, hotspots: Sequence[FireHotspot] = ()) -> None:
+        self.rows: dict[UUID, FireHotspot] = {}
+        self.save_many(hotspots)
+
+    def save_many(self, hotspots: Sequence[FireHotspot]) -> None:
+        for h in hotspots:
+            assert h.id is not None
+            self.rows.setdefault(h.id, h)
+
+    def find(self, query: GeoQuery) -> list[FireHotspot]:
+        return [
+            h
+            for h in sorted(self.rows.values(), key=lambda h: h.acquired_at, reverse=True)
+            if (query.bbox is None or query.bbox.contains(h.lon, h.lat))
+            and _in_dates(h.acquired_at.date(), query)
+            and (query.min_confidence == 0 or (h.confidence or 0) >= query.min_confidence * 100)
+        ][: query.limit]
+
+
+class InMemoryAnomalyRepository:
+    def __init__(self, anomalies: Sequence[Anomaly] = ()) -> None:
+        self.rows: dict[UUID, Anomaly] = {a.id: a for a in anomalies}
+
+    def save(self, anomaly: Anomaly) -> None:
+        existing = self.rows.get(anomaly.id)
+        if existing is not None:  # same semantics as the SQL upsert
+            anomaly = dataclasses.replace(
+                anomaly, state=existing.state, detected_at=existing.detected_at
+            )
+        self.rows[anomaly.id] = anomaly
+
+    def find(self, query: GeoQuery) -> list[Anomaly]:
+        return [
+            a
+            for a in sorted(self.rows.values(), key=lambda a: a.detected_at, reverse=True)
+            if (query.bbox is None or query.bbox.intersects(BBox.from_geometry(a.geometry)))
+            and _in_dates(a.detected_at.date(), query)
+            and a.confidence >= query.min_confidence
+        ][: query.limit]
+
+
+class InMemoryCarbonFactorRepository:
+    def __init__(self, factors: dict[str, float] | None = None) -> None:
+        self.factors = dict(factors or {})
+
+    def get_tc_per_ha(self, cover_type: str) -> float | None:
+        return self.factors.get(cover_type)
+
+
+class FakeSatellite:
+    """Returns canned readings per zone; zones in `failing` raise like a provider outage."""
+
+    def __init__(
+        self,
+        readings: Callable[[Zone, date, date], list[IndexReading]],
+        failing: set[UUID] | None = None,
+    ) -> None:
+        self._readings = readings
+        self.failing = failing or set()
+        self.calls: list[tuple[UUID, date, date]] = []
+
+    async def get_readings(self, zone: Zone, start: date, end: date) -> list[IndexReading]:
+        self.calls.append((zone.id, start, end))
+        if zone.id in self.failing:
+            raise RuntimeError("provider down")
+        return self._readings(zone, start, end)
+
+
+class FakeFireSource:
+    def __init__(self, hotspots: Sequence[FireHotspot] = ()) -> None:
+        self.hotspots = list(hotspots)
+
+    async def find_hotspots(self, bbox: BBox, start: date, end: date) -> list[FireHotspot]:
+        return [
+            h
+            for h in self.hotspots
+            if bbox.contains(h.lon, h.lat) and start <= h.acquired_at.date() <= end
+        ]

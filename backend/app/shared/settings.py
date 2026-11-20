@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, field_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/shared/settings.py -> repo root is three levels above `app/`.
@@ -19,7 +19,11 @@ class Settings(BaseSettings):
         extra="ignore",  # .env.local is shared with the frontend (NEXT_PUBLIC_*)
     )
 
-    app_mode: Literal["demo", "live"] = "live"
+    # demo: deterministic satellite/FIRMS adapters, no external calls. live: real providers.
+    app_mode: Literal["demo", "live"] = "demo"
+
+    # Shared secret Vercel Cron sends as `Authorization: Bearer <CRON_SECRET>`.
+    cron_secret: SecretStr = SecretStr("")
 
     # Supabase Postgres, direct/session connection. Normalised to the psycopg3 driver.
     database_url: SecretStr
@@ -30,8 +34,14 @@ class Settings(BaseSettings):
     supabase_service_role_key: SecretStr = SecretStr("")
     supabase_storage_bucket: str = "vigia"
 
-    sentinelhub_client_id: SecretStr = SecretStr("")
-    sentinelhub_client_secret: SecretStr = SecretStr("")
+    # Copernicus Data Space OAuth client (Sentinel Hub). Old SENTINELHUB_* names still accepted.
+    sentinel_client_id: SecretStr = Field(
+        SecretStr(""), validation_alias=AliasChoices("SENTINEL_CLIENT_ID", "SENTINELHUB_CLIENT_ID")
+    )
+    sentinel_client_secret: SecretStr = Field(
+        SecretStr(""),
+        validation_alias=AliasChoices("SENTINEL_CLIENT_SECRET", "SENTINELHUB_CLIENT_SECRET"),
+    )
     firms_map_key: SecretStr = SecretStr("")
     telegram_bot_token: SecretStr = SecretStr("")
     llm_api_key: SecretStr = SecretStr("")

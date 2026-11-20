@@ -1,6 +1,7 @@
 import math
 from collections.abc import Mapping
 from datetime import date, timedelta
+from typing import Any
 from uuid import UUID
 
 from app.monitoring.adapters.outbound.demo_scenario import (
@@ -9,6 +10,7 @@ from app.monitoring.adapters.outbound.demo_scenario import (
     event_start,
     unit_noise,
 )
+from app.monitoring.adapters.outbound.satellite.demo_image import render_demo_image
 from app.monitoring.domain.geo import BBox
 from app.monitoring.domain.index_reading import IndexReading
 from app.monitoring.domain.scan_window import WINDOW_EPOCH
@@ -67,3 +69,8 @@ class DemoSatelliteIndexAdapter:
                     )
                 )
         return readings
+
+    async def get_image(
+        self, geometry: dict[str, Any], day: date, lookback_days: int = 10
+    ) -> bytes:
+        return render_demo_image(geometry, day)

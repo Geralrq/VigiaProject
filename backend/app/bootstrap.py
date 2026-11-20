@@ -60,6 +60,7 @@ from app.monitoring.application.ports.satellite_index_port import SatelliteIndex
 from app.monitoring.application.ports.zone_repository import ZoneRepository
 from app.monitoring.application.use_cases.confirm_anomaly import ConfirmAnomaly
 from app.monitoring.application.use_cases.create_zone import CreateZone
+from app.monitoring.application.use_cases.ensure_anomaly_images import EnsureAnomalyImages
 from app.monitoring.application.use_cases.list_anomalies import ListAnomalies
 from app.monitoring.application.use_cases.list_hotspots import ListHotspots
 from app.monitoring.application.use_cases.list_zones import ListZones
@@ -114,6 +115,7 @@ from app.reports.application.use_cases.missions import (
     RespondToMission,
 )
 from app.shared.adapters.inbound.health import router as health_router
+from app.shared.adapters.inbound.me_router import build_me_router
 from app.shared.adapters.inbound.problems import register_problem_handlers
 from app.shared.adapters.inbound.security import build_auth_dependencies, build_cron_guard
 from app.shared.adapters.outbound.auth.jwks_token_verifier import (
@@ -122,6 +124,9 @@ from app.shared.adapters.outbound.auth.jwks_token_verifier import (
 )
 from app.shared.adapters.outbound.events.in_memory_bus import InMemoryEventBus
 from app.shared.adapters.outbound.persistence.engine import build_engine
+from app.shared.adapters.outbound.persistence.my_profile_repository import (
+    SqlAlchemyMyProfileRepository,
+)
 from app.shared.adapters.outbound.persistence.profile_repository import (
     SqlAlchemyProfileRepository,
 )
@@ -129,8 +134,10 @@ from app.shared.adapters.outbound.storage.in_memory_storage import InMemoryStora
 from app.shared.adapters.outbound.storage.supabase_storage import SupabaseStorageAdapter
 from app.shared.application.ports.auth import ProfileRepository, TokenVerifier
 from app.shared.application.ports.events import EventPublisher
+from app.shared.application.ports.profile import MyProfileRepository
 from app.shared.application.ports.storage import StoragePort
 from app.shared.application.use_cases.authenticate_user import AuthenticateUser
+from app.shared.application.use_cases.my_profile import GetMyProfile, UpdateMyProfile
 from app.shared.domain.events import AlertCreated, AnomalyConfirmed, AnomalyDetected
 from app.shared.settings import get_settings
 
@@ -179,6 +186,25 @@ def provide_authenticate_user(
 
 
 auth = build_auth_dependencies(provide_authenticate_user)
+
+
+# --- shared: own profile --------------------------------------------------------------
+
+
+def provide_my_profile_repository(session: SessionDep) -> MyProfileRepository:
+    return SqlAlchemyMyProfileRepository(session)
+
+
+def provide_get_my_profile(
+    profiles: Annotated[MyProfileRepository, Depends(provide_my_profile_repository)],
+) -> GetMyProfile:
+    return GetMyProfile(profiles)
+
+
+def provide_update_my_profile(
+    profiles: Annotated[MyProfileRepository, Depends(provide_my_profile_repository)],
+) -> UpdateMyProfile:
+    return UpdateMyProfile(profiles)
 
 
 # --- monitoring: zones ----------------------------------------------------------------
@@ -473,6 +499,14 @@ def provide_respond_to_mission(
     return RespondToMission(missions, scores, review, storage, config)
 
 
+def provide_ensure_anomaly_images(
+    anomalies: Annotated[AnomalyRepository, Depends(provide_anomaly_repository)],
+    satellite: Annotated[SatelliteIndexPort, Depends(provide_satellite_index)],
+    storage: Annotated[StoragePort, Depends(provide_storage)],
+) -> EnsureAnomalyImages:
+    return EnsureAnomalyImages(anomalies, satellite, storage)
+
+
 # --- monitoring: scan and confirm (publish events) ------------------------------------
 
 
@@ -536,10 +570,16 @@ def create_app() -> FastAPI:
     register_problem_handlers(app)
     app.include_router(health_router, prefix="/api")
     app.include_router(
+        build_me_router(auth, provide_get_my_profile, provide_update_my_profile), prefix="/api"
+    )
+    app.include_router(
         build_zones_router(auth, provide_list_zones, provide_create_zone), prefix="/api"
     )
     app.include_router(build_scan_router(auth, cron_guard, provide_scan_zones), prefix="/api")
-    app.include_router(build_anomalies_router(auth, provide_list_anomalies), prefix="/api")
+    app.include_router(
+        build_anomalies_router(auth, provide_list_anomalies, provide_ensure_anomaly_images),
+        prefix="/api",
+    )
     app.include_router(build_hotspots_router(auth, provide_list_hotspots), prefix="/api")
     app.include_router(build_anomalies_admin_router(auth, provide_confirm_anomaly), prefix="/api")
     app.include_router(

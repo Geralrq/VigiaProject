@@ -11,10 +11,14 @@ class InMemoryStorage:
         self.bucket = bucket
         self.objects: dict[str, tuple[bytes, str]] = {}
 
-    def upload(self, path: str, data: bytes, content_type: str) -> None:
-        if path in self.objects:
+    def upload(self, path: str, data: bytes, content_type: str, *, overwrite: bool = False) -> None:
+        if path in self.objects and not overwrite:
             raise ConflictError("El objeto ya existe.")
         self.objects[path] = (data, content_type)
+
+    def delete(self, paths: Sequence[str]) -> None:
+        for path in paths:
+            self.objects.pop(path, None)
 
     def signed_urls(
         self, paths: Sequence[str], expires_in: int = SIGNED_URL_TTL_SECONDS

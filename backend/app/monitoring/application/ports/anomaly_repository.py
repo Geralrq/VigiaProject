@@ -23,4 +23,10 @@ class AnomalyRepository(Protocol):
         """Persist only `anomaly.state` (an explicit, deliberate state change)."""
         ...
 
+    def set_image_paths(
+        self, anomaly_id: UUID, *, before: str | None = None, after: str | None = None
+    ) -> None:
+        """Store the given object paths (None leaves that column as it is)."""
+        ...
+
     def find(self, query: GeoQuery) -> list[Anomaly]: ...

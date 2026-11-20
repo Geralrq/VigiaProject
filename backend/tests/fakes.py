@@ -96,6 +96,16 @@ class InMemoryAnomalyRepository:
     def get(self, anomaly_id: UUID) -> Anomaly | None:
         return self.rows.get(anomaly_id)
 
+    def set_image_paths(
+        self, anomaly_id: UUID, *, before: str | None = None, after: str | None = None
+    ) -> None:
+        current = self.rows[anomaly_id]
+        self.rows[anomaly_id] = dataclasses.replace(
+            current,
+            before_image_path=before or current.before_image_path,
+            after_image_path=after or current.after_image_path,
+        )
+
     def update_state(self, anomaly: Anomaly) -> None:
         self.rows[anomaly.id] = dataclasses.replace(self.rows[anomaly.id], state=anomaly.state)
 

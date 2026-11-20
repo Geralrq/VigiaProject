@@ -41,6 +41,8 @@ class Anomaly:
     geometry: GeoJsonGeometry
     detected_at: datetime
     state: AnomalyState = AnomalyState.DETECTED
+    before_image_path: str | None = None  # object paths in the evidence bucket, never URLs
+    after_image_path: str | None = None
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.magnitude) or self.magnitude < 0:

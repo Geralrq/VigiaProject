@@ -34,6 +34,8 @@ def to_domain(row: AnomalyModel) -> Anomaly:
         geometry=json.loads(shapely.to_geojson(to_shape(row.geom))),
         detected_at=row.creada_en,
         state=AnomalyState(row.estado),
+        before_image_path=row.imagen_antes_url,
+        after_image_path=row.imagen_despues_url,
     )
 
 
@@ -73,6 +75,19 @@ class SqlAlchemyAnomalyRepository:
             select(AnomalyModel).where(AnomalyModel.id == anomaly_id).with_for_update()
         )
         return to_domain(row) if row is not None else None
+
+    def set_image_paths(
+        self, anomaly_id: UUID, *, before: str | None = None, after: str | None = None
+    ) -> None:
+        values = {
+            col: path
+            for col, path in (("imagen_antes_url", before), ("imagen_despues_url", after))
+            if path is not None
+        }
+        if values:
+            self._session.execute(
+                update(AnomalyModel).where(AnomalyModel.id == anomaly_id).values(**values)
+            )
 
     def update_state(self, anomaly: Anomaly) -> None:
         self._session.execute(

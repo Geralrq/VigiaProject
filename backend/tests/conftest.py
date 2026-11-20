@@ -26,6 +26,7 @@ from app.bootstrap import (
     provide_link_code_signer,
     provide_mission_config,
     provide_mission_repository,
+    provide_my_profile_repository,
     provide_notifiers,
     provide_profile_repository,
     provide_recipient_finder,
@@ -66,6 +67,7 @@ from tests.fakes_alerts import (
     InMemoryChatLinkRepository,
     RecordingNotifier,
 )
+from tests.fakes_profile import InMemoryMyProfileRepository
 from tests.fakes_reports import (
     FakeCandidateFinder,
     InMemoryMissionRepository,
@@ -204,6 +206,11 @@ def chat_links() -> InMemoryChatLinkRepository:
 
 
 @pytest.fixture
+def my_profiles(profiles: InMemoryProfileRepository) -> InMemoryMyProfileRepository:
+    return InMemoryMyProfileRepository(profiles)
+
+
+@pytest.fixture
 def storage() -> InMemoryStorage:
     return InMemoryStorage()
 
@@ -254,6 +261,7 @@ def client(
     missions: InMemoryMissionRepository,
     candidates: FakeCandidateFinder,
     scores: InMemoryScoreRepository,
+    my_profiles: InMemoryMyProfileRepository,
 ) -> TestClient:
     """App wired to in-memory repos and the demo (offline) satellite/FIRMS adapters."""
     readings = InMemoryIndexReadingRepository()
@@ -280,6 +288,7 @@ def client(
         provide_telegram_bot_username: lambda: BOT_USERNAME,
         provide_critical_confidence: lambda: 0.75,
         provide_storage: lambda: storage,
+        provide_my_profile_repository: lambda: my_profiles,
         provide_report_repository: lambda: reports,
         provide_mission_repository: lambda: missions,
         provide_candidate_finder: lambda: candidates,

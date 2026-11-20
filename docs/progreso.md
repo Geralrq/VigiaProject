@@ -16,3 +16,14 @@
 - Seed: `uv run python -m scripts.seed` (ids uuid5 + ON CONFLICT DO NOTHING): 3 zonas, 5 carbon_factors, 78 lecturas, incendio (Paramillo) y deforestación (Guaviare).
 - Verificado en Supabase (MCP, solo lectura): postgis 3.3.7 en `extensions`, 11 tablas con RLS y 0 políticas, 6 índices GIST, SRID 4326, filas del seed 3/5/78/5/2, `alembic_version`=001. Seed re-ejecutado sin duplicar.
 - Pendiente: auth JWT, modo demo, puertos y casos de uso (Fase 3+).
+
+## Fase 3 — Seguridad y módulo plantilla (zones en monitoring)
+- Auth: `JwksTokenVerifier` (PyJWKClient con caché, aud `authenticated`, iss `SUPABASE_URL/auth/v1`, alg tomado de la llave y solo asimétricos) → `AuthenticateUser` crea el perfil CIUDADANO al primer ingreso; el rol sale siempre de `profiles`. `auth.current_user` / `auth.require_roles(Role.X)` en `shared/adapters/inbound/security.py`.
+- Errores: excepciones de dominio (`shared/domain/errors.py`) → problem+json en `problems.py` (401/403/404/422/503/500). CORS: http://localhost:3000.
+- PATRÓN a copiar por módulo (ver `monitoring/` + zones):
+  1. `domain/<x>.py`: dataclass con invariantes en `__post_init__` (lanza `DomainValidationError`), sin frameworks.
+  2. `application/ports/<x>_repository.py`: `Protocol`; `application/use_cases/<verbo>_<x>.py`: clase con `execute()` que recibe puertos por constructor (+ `Command` dataclass si hay entrada).
+  3. `adapters/outbound/persistence/<x>_repository.py`: `to_domain(row)` / `to_row(entidad)`; columnas en español, dominio y API en inglés.
+  4. `adapters/inbound/<x>_schemas.py` (Pydantic, `from_domain`/`to_command`) y `<x>_router.py` con `build_<x>_router(auth, provide_...)`; sin lógica.
+  5. `app/bootstrap.py`: `provide_<repo>(SessionDep)` → `provide_<caso_de_uso>` → `include_router`. Tests: fakes en `tests/fakes.py` y `app.dependency_overrides[provide_<repo>]`.
+- Sesión: una transacción por request (`Depends(scope="function")`, commit antes de responder).

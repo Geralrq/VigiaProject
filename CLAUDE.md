@@ -15,6 +15,7 @@ Monorepo: /backend (FastAPI, Python 3.13, uv) · /frontend (Next.js App Router +
 
 ## Convenciones
 - Código y nombres en inglés; textos de UI en español.
+- Nombres de columnas, estados y roles en español (lenguaje del dominio); código Python y TypeScript en inglés.
 - Pydantic v2 en los bordes de la API; tipos del front generados con openapi-typescript desde /openapi.json.
 - Seguridad: JWT de Supabase validado por JWKS (PyJWT); roles CIUDADANO, GUARDABOSQUES, TECNICO, AUTORIDAD, ADMIN.
 - Proveedores externos (Sentinel Hub, FIRMS, Telegram, LLM) siempre detrás de un puerto, con adaptador simulado para tests y modo demo (APP_MODE=demo).

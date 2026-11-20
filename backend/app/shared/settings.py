@@ -37,6 +37,14 @@ class Settings(BaseSettings):
     llm_api_key: SecretStr = SecretStr("")
     llm_model: str = ""
 
+    @property
+    def jwt_issuer(self) -> str:
+        return f"{self.supabase_url.rstrip('/')}/auth/v1"
+
+    @property
+    def jwks_url(self) -> str:
+        return self.supabase_jwks_url or f"{self.jwt_issuer}/.well-known/jwks.json"
+
     @field_validator("database_url")
     @classmethod
     def _use_psycopg3_driver(cls, value: SecretStr) -> SecretStr:

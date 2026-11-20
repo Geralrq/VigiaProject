@@ -87,6 +87,7 @@ from app.monitoring.application.ports.zone_repository import ZoneRepository
 from app.monitoring.application.use_cases.confirm_anomaly import ConfirmAnomaly
 from app.monitoring.application.use_cases.create_zone import CreateZone
 from app.monitoring.application.use_cases.ensure_anomaly_images import EnsureAnomalyImages
+from app.monitoring.application.use_cases.get_zone_readings import GetZoneReadings
 from app.monitoring.application.use_cases.list_anomalies import ListAnomalies
 from app.monitoring.application.use_cases.list_hotspots import ListHotspots
 from app.monitoring.application.use_cases.list_zones import ListZones
@@ -283,6 +284,13 @@ def provide_fire_hotspot_source() -> FireHotspotPort:
 
 def provide_index_reading_repository(session: SessionDep) -> IndexReadingRepository:
     return SqlAlchemyIndexReadingRepository(session)
+
+
+def provide_get_zone_readings(
+    zones: Annotated[ZoneRepository, Depends(provide_zone_repository)],
+    readings: Annotated[IndexReadingRepository, Depends(provide_index_reading_repository)],
+) -> GetZoneReadings:
+    return GetZoneReadings(zones, readings)
 
 
 def provide_fire_hotspot_repository(session: SessionDep) -> FireHotspotRepository:
@@ -700,7 +708,10 @@ def create_app() -> FastAPI:
         build_me_router(auth, provide_get_my_profile, provide_update_my_profile), prefix="/api"
     )
     app.include_router(
-        build_zones_router(auth, provide_list_zones, provide_create_zone), prefix="/api"
+        build_zones_router(
+            auth, provide_list_zones, provide_create_zone, provide_get_zone_readings
+        ),
+        prefix="/api",
     )
     app.include_router(build_scan_router(auth, cron_guard, provide_scan_zones), prefix="/api")
     app.include_router(

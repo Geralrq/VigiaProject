@@ -1,3 +1,5 @@
-export default function HomePage() {
-  return <main>Vigía</main>;
+import { redirect } from "next/navigation";
+
+export default function Home() {
+  redirect("/mapa");
 }

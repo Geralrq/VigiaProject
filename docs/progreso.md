@@ -73,3 +73,11 @@
 - Desde /backend: `uv run python -m scripts.create_dev_users` (5 usuarios `*@vigia.test` en Supabase Auth + `profiles`; contraseña `DEV_USERS_PASSWORD` en `.env.local`; idempotente; ciudadano en Guaviare y guardabosques en Paramillo, ~110 m del centro de la zona) y `uv run python -m scripts.reset_demo` (se niega con `APP_MODE=live`; borra anomalías/alertas/misiones/inspecciones/notificaciones/lecturas/focos + objetos de Storage, restaura umbrales y pone puntos en 0).
 - Pruebas con fakes en `tests/test_dev_scripts.py` (505 tests, lint-imports y ruff OK). Scripts no ejecutados contra Supabase real.
 - Pendiente para el final: colección Bruno (`/api-tests`).
+
+## Fase 9a — Base del frontend y centro de comando (sin estilo; el diseño es la Fase 10)
+- Backend: `GET /api/zones/{id}/readings?index=NDVI&days=90` (autenticado; serie + `baseline` + `threshold_line` = mediana − |umbral de la zona|; 404 zona, 422 rango/índice). 512 tests, lint-imports y ruff OK.
+- Tipos: `npm run gen:api` (backend en :8000) → `src/shared/api/schema.d.ts`; alias en `shared/api/types.ts`. Único `fetch`: `shared/api/client.ts` (adjunta el JWT de Supabase; 401 cierra sesión, 403 → `ApiError`); datos vía React Query en `features/<x>/api`.
+- Auth: `/login` (supabase-js), `useMe` sobre `/api/me`, guarda de sesión y rol por ruta + menú por rol en `AppShell` (grupo `app/(app)`; tabla en `shared/auth/access.ts`). `/a/[id]` irá fuera del grupo: no existe aún. Requiere `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en `frontend/.env.local`.
+- `/mapa` (`features/map`): MapLibre + OSM raster, capas (zonas, anomalías, alertas, reportes por rol, heatmap FIRMS con deck.gl), carga por bbox con debounce, panel de detalle, deslizador antes/después (range nativo), gráfico NDVI SVG con umbral, tarjeta de impacto (CO₂ «estimación»), ADMIN: Escanear ahora y Confirmar anomalía; avisos con Supabase Realtime (`notifications`, RLS).
+- Estilos: solo `shared/styles/tokens.css` (valores) + `base.css` (estructura con var()); la Fase 10 reemplaza los tokens.
+- Correr: backend `cd backend && uv run fastapi dev` (:8000) · frontend `cd frontend && npm run dev` (:3000; /api se proxifica). Verificado: lint, tsc y build OK; /login y /mapa responden 200. NO probado con sesión real (flujo login → mapa, Realtime, mutaciones ADMIN).

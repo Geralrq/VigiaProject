@@ -1,9 +1,11 @@
+from datetime import date as date_type
 from typing import Annotated, Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.monitoring.application.use_cases.create_zone import CreateZoneCommand
+from app.monitoring.application.use_cases.get_zone_readings import ZoneReadings
 from app.monitoring.domain.zone import Zone
 
 Position = Annotated[list[float], Field(min_length=2, max_length=3)]
@@ -35,6 +37,37 @@ class ZoneIn(BaseModel):
             ndvi_threshold=self.ndvi_threshold,
             nbr_threshold=self.nbr_threshold,
             active=self.active,
+        )
+
+
+class ReadingOut(BaseModel):
+    date: date_type
+    value: float
+    cloud_pct: float
+
+
+class ZoneReadingsOut(BaseModel):
+    zone_id: UUID
+    index: Literal["NDVI", "NBR", "NDWI"]
+    start: date_type
+    end: date_type
+    baseline: float | None
+    threshold_line: float | None
+    readings: list[ReadingOut]
+
+    @classmethod
+    def from_domain(cls, data: ZoneReadings) -> Self:
+        return cls(
+            zone_id=data.zone_id,
+            index=data.index.value,
+            start=data.start,
+            end=data.end,
+            baseline=data.baseline,
+            threshold_line=data.threshold_line,
+            readings=[
+                ReadingOut(date=r.observed_on, value=r.value, cloud_pct=r.cloud_pct)
+                for r in data.readings
+            ],
         )
 
 

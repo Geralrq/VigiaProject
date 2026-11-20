@@ -176,6 +176,11 @@ def zones() -> InMemoryZoneRepository:
 
 
 @pytest.fixture
+def readings() -> InMemoryIndexReadingRepository:
+    return InMemoryIndexReadingRepository()
+
+
+@pytest.fixture
 def anomalies() -> InMemoryAnomalyRepository:
     return InMemoryAnomalyRepository()
 
@@ -284,6 +289,7 @@ def client(
     verifier: JwksTokenVerifier,
     profiles: InMemoryProfileRepository,
     zones: InMemoryZoneRepository,
+    readings: InMemoryIndexReadingRepository,
     anomalies: InMemoryAnomalyRepository,
     hotspots: InMemoryFireHotspotRepository,
     alerts: InMemoryAlertRepository,
@@ -305,7 +311,6 @@ def client(
     pdf_generator: FakePdfGenerator,
 ) -> TestClient:
     """App wired to in-memory repos and the demo (offline) satellite/FIRMS adapters."""
-    readings = InMemoryIndexReadingRepository()
     carbon = InMemoryCarbonFactorRepository({"bosque_amazonico": 180.0})
     app = create_app()
     overrides = {

@@ -17,7 +17,7 @@ import httpx
 
 from app.bootstrap import EVIDENCE_BUCKET
 from app.shared.adapters.outbound.storage.supabase_storage import SupabaseStorageAdapter
-from app.shared.domain.errors import DomainError
+from app.shared.domain.errors import DomainError, NotFoundError
 from app.shared.settings import get_settings
 
 # 1x1 transparent PNG
@@ -97,6 +97,30 @@ def main() -> None:
             public.status_code >= 400,
             f"public URL -> HTTP {public.status_code} (bucket is not public)",
         )
+
+        step(
+            storage.download(path) == PNG,
+            "download() through the service key returns the same bytes",
+        )
+        replacement = PNG + b"\0"
+        storage.upload(path, replacement, "image/png", overwrite=True)
+        step(
+            storage.download(path) == replacement,
+            "upload(overwrite=True) replaces the object (used for PDFs)",
+        )
+        try:
+            storage.download(f"verificacion/{uuid4()}-no-existe.png")
+        except NotFoundError:
+            step(True, "download() of a missing object -> NotFoundError")
+        else:
+            step(False, "download() of a missing object did not fail")
+
+        pdf_path = f"verificacion/{uuid4()}.pdf"
+        try:
+            storage.upload(pdf_path, b"%PDF-1.4\n%%EOF\n", "application/pdf", overwrite=True)
+            step(True, "the bucket accepts application/pdf (inspection reports)")
+        finally:
+            storage.delete([pdf_path])
 
         try:  # the adapter refuses to overwrite
             storage.upload(path, b"x", "image/png")

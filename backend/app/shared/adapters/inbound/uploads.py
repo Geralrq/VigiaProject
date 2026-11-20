@@ -1,6 +1,6 @@
 from fastapi import UploadFile
 
-from app.reports.domain.photo import MAX_PHOTO_BYTES
+from app.shared.domain.photo import MAX_PHOTO_BYTES
 
 
 def read_photo(upload: UploadFile | None) -> bytes | None:

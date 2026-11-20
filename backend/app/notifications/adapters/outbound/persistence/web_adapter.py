@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.notifications.adapters.outbound.persistence.models import NotificationModel
-from app.notifications.domain.notice import AlertNotice, Channel, Notice, compose_text
+from app.notifications.domain.notice import Channel, Notice, compose_text
 from app.shared.domain.events import Recipient
 
 
@@ -19,7 +19,9 @@ class WebNotificationAdapter:
             self._session.add(
                 NotificationModel(
                     usuario=recipient.user_id,
-                    alert_id=notice.alert_id if isinstance(notice, AlertNotice) else None,
+                    alert_id=getattr(
+                        notice, "alert_id", None
+                    ),  # alert and inspection notices have one
                     canal=Channel.WEB.value,
                     contenido=compose_text(notice, self._public_url),
                 )

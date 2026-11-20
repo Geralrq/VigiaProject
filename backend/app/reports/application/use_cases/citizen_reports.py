@@ -5,7 +5,6 @@ from uuid import UUID, uuid4
 
 from app.monitoring.domain.geo import BBox
 from app.reports.application.ports.report_repository import ReportRepository
-from app.reports.domain.photo import evidence_path, validate_photo
 from app.reports.domain.report import (
     CitizenReport,
     ReportCategory,
@@ -13,6 +12,7 @@ from app.reports.domain.report import (
     can_view_all_reports,
 )
 from app.shared.application.ports.storage import StoragePort
+from app.shared.domain.photo import evidence_path, validate_photo
 from app.shared.domain.user import User
 
 

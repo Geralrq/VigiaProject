@@ -112,3 +112,69 @@ def test_in_memory_storage_returns_marker_urls_and_never_overwrites() -> None:
     assert url and url.startswith("https://storage.demo.invalid/evidencias/misiones/a.png")
     with pytest.raises(ConflictError):
         storage.upload("misiones/a.png", b"y", "image/png")
+
+
+def test_download_returns_the_object_bytes_with_the_service_key() -> None:
+    seen: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, content=b"PDFBYTES")
+
+    assert adapter(respond).download("informes/a b.pdf") == b"PDFBYTES"
+    assert str(seen[0].url) == f"{URL}/storage/v1/object/evidencias/informes/a%20b.pdf"
+    assert seen[0].headers["apikey"] == KEY
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        httpx.Response(404, json={"error": "not_found"}),
+        httpx.Response(
+            400,
+            json={"statusCode": "404", "error": "Bucket not found", "message": "Object not found"},
+        ),
+    ],
+    ids=["404", "400-not-found"],
+)
+def test_download_of_a_missing_object_is_not_found(response: httpx.Response) -> None:
+    from app.shared.domain.errors import NotFoundError
+
+    with pytest.raises(NotFoundError):
+        adapter(lambda r: response).download("x.pdf")
+
+
+def test_download_failures_are_503_and_never_leak_the_key(caplog: pytest.LogCaptureFixture) -> None:
+    def boom(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("boom", request=request)
+
+    with caplog.at_level("ERROR"), pytest.raises(ServiceUnavailableError):
+        adapter(boom).download("x.pdf")
+    with pytest.raises(ServiceUnavailableError):
+        adapter(lambda r: httpx.Response(500)).download("x.pdf")
+    with pytest.raises(ServiceUnavailableError, match="no está configurado"):
+        adapter(lambda r: pytest.fail("no call"), key="", url="").download("x.pdf")
+    assert KEY not in caplog.text
+
+
+def test_upload_overwrite_sets_the_upsert_header() -> None:
+    seen: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={})
+
+    adapter(respond).upload("a.pdf", b"x", "application/pdf", overwrite=True)
+    adapter(respond).upload("a.pdf", b"x", "application/pdf")
+    assert [r.headers["x-upsert"] for r in seen] == ["true", "false"]
+
+
+def test_in_memory_download_and_overwrite() -> None:
+    from app.shared.domain.errors import NotFoundError
+
+    storage = InMemoryStorage()
+    storage.upload("a.pdf", b"v1", "application/pdf")
+    storage.upload("a.pdf", b"v2", "application/pdf", overwrite=True)
+    assert storage.download("a.pdf") == b"v2"
+    with pytest.raises(NotFoundError):
+        storage.download("missing.pdf")

@@ -13,13 +13,6 @@ from app.monitoring.domain.sensitivity import (
 )
 from app.monitoring.domain.zone import Zone
 from app.reports.domain.mission import Mission, MissionAnswer, MissionState, mission_id
-from app.reports.domain.photo import (
-    MAX_PHOTO_BYTES,
-    Photo,
-    evidence_path,
-    sniff_content_type,
-    validate_photo,
-)
 from app.reports.domain.report import CitizenReport, ReportCategory, Urgency, can_view_all_reports
 from app.reports.domain.verification import (
     MAX_MISSIONS,
@@ -32,6 +25,13 @@ from app.reports.domain.verification import (
     select_nearest,
 )
 from app.shared.domain.errors import ConflictError, DomainValidationError, PayloadTooLargeError
+from app.shared.domain.photo import (
+    MAX_PHOTO_BYTES,
+    Photo,
+    evidence_path,
+    sniff_content_type,
+    validate_photo,
+)
 from app.shared.domain.user import Role
 from tests.test_zones_use_cases import square
 

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
 from app.shared.application.ports.storage import SIGNED_URL_TTL_SECONDS
-from app.shared.domain.errors import ConflictError
+from app.shared.domain.errors import ConflictError, NotFoundError
 
 
 class InMemoryStorage:
@@ -15,6 +15,11 @@ class InMemoryStorage:
         if path in self.objects and not overwrite:
             raise ConflictError("El objeto ya existe.")
         self.objects[path] = (data, content_type)
+
+    def download(self, path: str) -> bytes:
+        if path not in self.objects:
+            raise NotFoundError("El objeto no existe.")
+        return self.objects[path][0]
 
     def delete(self, paths: Sequence[str]) -> None:
         for path in paths:

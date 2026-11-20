@@ -5,7 +5,7 @@ from urllib.parse import quote
 import httpx
 
 from app.shared.application.ports.storage import SIGNED_URL_TTL_SECONDS
-from app.shared.domain.errors import ServiceUnavailableError
+from app.shared.domain.errors import NotFoundError, ServiceUnavailableError
 
 logger = logging.getLogger(__name__)
 
@@ -60,14 +60,36 @@ class SupabaseStorageAdapter:
             )
         except httpx.HTTPError as exc:
             logger.error("Storage upload failed: %s", type(exc).__name__)
-            raise ServiceUnavailableError("No se pudo guardar la foto; intenta de nuevo.") from None
+            raise ServiceUnavailableError(
+                "No se pudo guardar el archivo; intenta de nuevo."
+            ) from None
         if response.status_code >= 400:
             logger.error(
                 "Storage upload rejected: HTTP %s (%s)",
                 response.status_code,
                 _reason(response),
             )
-            raise ServiceUnavailableError("No se pudo guardar la foto; intenta de nuevo.")
+            raise ServiceUnavailableError("No se pudo guardar el archivo; intenta de nuevo.")
+
+    def download(self, path: str) -> bytes:
+        self._require_configured()
+        try:
+            response = self._client.get(
+                f"{self._root}/object/{self._bucket}/{quote(path, safe='/')}"
+            )
+        except httpx.HTTPError as exc:
+            logger.error("Storage download failed: %s", type(exc).__name__)
+            raise ServiceUnavailableError("No se pudo leer el archivo.") from None
+        if response.status_code == 404 or (
+            response.status_code == 400 and "not found" in _reason(response).lower()
+        ):
+            raise NotFoundError("El objeto no existe.")  # Storage answers 400 + "not found"
+        if response.status_code >= 400:
+            logger.error(
+                "Storage download rejected: HTTP %s (%s)", response.status_code, _reason(response)
+            )
+            raise ServiceUnavailableError("No se pudo leer el archivo.")
+        return response.content
 
     def delete(self, paths: Sequence[str]) -> None:
         if not paths:

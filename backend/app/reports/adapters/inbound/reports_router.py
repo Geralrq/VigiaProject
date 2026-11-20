@@ -12,7 +12,6 @@ from app.reports.adapters.inbound.reports_schemas import (
     ReportCollection,
     ReportFeature,
 )
-from app.reports.adapters.inbound.uploads import read_photo
 from app.reports.application.use_cases.citizen_reports import (
     CreateReport,
     CreateReportCommand,
@@ -27,6 +26,7 @@ from app.reports.domain.mission import MissionAnswer
 from app.reports.domain.report import ReportCategory, Urgency
 from app.shared.adapters.inbound.problems import PROBLEM_RESPONSES
 from app.shared.adapters.inbound.security import AuthDependencies
+from app.shared.adapters.inbound.uploads import read_photo
 from app.shared.domain.user import User
 
 PHOTO_DOC = "Foto opcional: JPEG, PNG o WebP, máximo 5 MB."

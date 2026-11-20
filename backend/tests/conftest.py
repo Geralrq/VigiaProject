@@ -20,22 +20,27 @@ from app.bootstrap import (
     provide_chat_link_repository,
     provide_critical_confidence,
     provide_cron_secret,
+    provide_evidence_source,
     provide_fire_hotspot_repository,
     provide_fire_hotspot_source,
     provide_index_reading_repository,
+    provide_inspection_repository,
     provide_link_code_signer,
     provide_mission_config,
     provide_mission_repository,
     provide_my_profile_repository,
     provide_notifiers,
     provide_profile_repository,
+    provide_public_app_url,
     provide_recipient_finder,
+    provide_report_generator,
     provide_report_repository,
     provide_satellite_index,
     provide_score_repository,
     provide_session,
     provide_set_telegram_chat,
     provide_storage,
+    provide_technician_directory,
     provide_telegram_bot_username,
     provide_telegram_chat,
     provide_telegram_webhook_secret,
@@ -67,6 +72,12 @@ from tests.fakes_alerts import (
     InMemoryChatLinkRepository,
     RecordingNotifier,
 )
+from tests.fakes_inspections import (
+    FakeEvidenceSource,
+    FakePdfGenerator,
+    InMemoryInspectionRepository,
+    InMemoryTechnicianDirectory,
+)
 from tests.fakes_profile import InMemoryMyProfileRepository
 from tests.fakes_reports import (
     FakeCandidateFinder,
@@ -82,6 +93,7 @@ CRON_SECRET = "test-cron-secret-0123456789"
 WEBHOOK_SECRET = "test-webhook-secret-0123456789"
 LINK_SECRET = "test-link-secret-0123456789"
 BOT_USERNAME = "VigiaTestBot"
+PUBLIC_URL = "https://vigia.example"
 
 TokenFactory = Callable[..., str]
 
@@ -211,6 +223,31 @@ def my_profiles(profiles: InMemoryProfileRepository) -> InMemoryMyProfileReposit
 
 
 @pytest.fixture
+def inspections(
+    alerts: InMemoryAlertRepository,
+    anomalies: InMemoryAnomalyRepository,
+    zones: InMemoryZoneRepository,
+    profiles: InMemoryProfileRepository,
+) -> InMemoryInspectionRepository:
+    return InMemoryInspectionRepository(alerts, anomalies, zones, profiles)
+
+
+@pytest.fixture
+def technicians(profiles: InMemoryProfileRepository) -> InMemoryTechnicianDirectory:
+    return InMemoryTechnicianDirectory(profiles)
+
+
+@pytest.fixture
+def evidence() -> FakeEvidenceSource:
+    return FakeEvidenceSource()
+
+
+@pytest.fixture
+def pdf_generator() -> FakePdfGenerator:
+    return FakePdfGenerator()
+
+
+@pytest.fixture
 def storage() -> InMemoryStorage:
     return InMemoryStorage()
 
@@ -262,6 +299,10 @@ def client(
     candidates: FakeCandidateFinder,
     scores: InMemoryScoreRepository,
     my_profiles: InMemoryMyProfileRepository,
+    inspections: InMemoryInspectionRepository,
+    technicians: InMemoryTechnicianDirectory,
+    evidence: FakeEvidenceSource,
+    pdf_generator: FakePdfGenerator,
 ) -> TestClient:
     """App wired to in-memory repos and the demo (offline) satellite/FIRMS adapters."""
     readings = InMemoryIndexReadingRepository()
@@ -289,6 +330,11 @@ def client(
         provide_critical_confidence: lambda: 0.75,
         provide_storage: lambda: storage,
         provide_my_profile_repository: lambda: my_profiles,
+        provide_inspection_repository: lambda: inspections,
+        provide_technician_directory: lambda: technicians,
+        provide_evidence_source: lambda: evidence,
+        provide_report_generator: lambda: pdf_generator,
+        provide_public_app_url: lambda: PUBLIC_URL,
         provide_report_repository: lambda: reports,
         provide_mission_repository: lambda: missions,
         provide_candidate_finder: lambda: candidates,

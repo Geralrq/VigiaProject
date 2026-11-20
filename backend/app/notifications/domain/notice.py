@@ -35,7 +35,18 @@ class MissionNotice:
     distance_km: float
 
 
-Notice = AlertNotice | MissionNotice
+@dataclass(frozen=True, slots=True)
+class InspectionNotice:
+    """An inspection ticket was assigned to a technician."""
+
+    inspection_id: UUID
+    alert_id: UUID
+    zone_name: str
+    risk_level: str
+    route_url: str
+
+
+Notice = AlertNotice | MissionNotice | InspectionNotice
 
 _LEVEL_LABEL = {"BAJO": "BAJO", "MEDIO": "MEDIO", "ALTO": "ALTO", "CRITICO": "CRÍTICO"}
 _TYPE_LABEL = {"DEFORESTACION": "Deforestación", "INCENDIO": "Incendio"}
@@ -43,6 +54,13 @@ _TYPE_LABEL = {"DEFORESTACION": "Deforestación", "INCENDIO": "Incendio"}
 
 def compose_text(notice: Notice, public_url: str) -> str:
     """Spanish message. Alerts: level, zone, hectares and the public link /a/{id}."""
+    if isinstance(notice, InspectionNotice):
+        level = _LEVEL_LABEL.get(notice.risk_level, notice.risk_level)
+        return (
+            f"🔎 Inspección asignada: riesgo {level} en {notice.zone_name}.\n"
+            f"Ruta: {notice.route_url}\n"
+            f"Detalle y formulario en Vigía: {public_url.rstrip('/')}/inspecciones"
+        )
     if isinstance(notice, MissionNotice):
         kind = _TYPE_LABEL.get(notice.anomaly_type, notice.anomaly_type.capitalize())
         return (

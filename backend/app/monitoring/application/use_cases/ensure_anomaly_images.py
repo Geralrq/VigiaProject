@@ -27,6 +27,8 @@ class AnomalyImages:
     after_url: str | None
     before_date: date
     after_date: date
+    before_path: str | None = None  # object paths, for callers that need the bytes
+    after_path: str | None = None
 
 
 class EnsureAnomalyImages:
@@ -85,6 +87,8 @@ class EnsureAnomalyImages:
             after_url=urls.get(paths[ImagePhase.AFTER]) if paths[ImagePhase.AFTER] else None,
             before_date=before_req.day,
             after_date=after_req.day,
+            before_path=paths[ImagePhase.BEFORE],
+            after_path=paths[ImagePhase.AFTER],
         )
 
     async def _generate(self, anomaly: Anomaly, request: ImageRequest) -> str | None:

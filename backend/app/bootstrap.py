@@ -25,6 +25,32 @@ from app.alerts.application.ports.recipient_finder import RecipientFinder
 from app.alerts.application.use_cases.create_alert import CreateAlertOnAnomalyConfirmed
 from app.alerts.application.use_cases.get_alert import GetAlert
 from app.alerts.application.use_cases.list_alerts import ListAlerts
+from app.inspections.adapters.inbound.inspections_router import build_inspections_router
+from app.inspections.adapters.outbound.pdf_report import ReportLabPdfGenerator
+from app.inspections.adapters.outbound.persistence.inspection_repository import (
+    SqlAlchemyInspectionRepository,
+    SqlAlchemyTechnicianDirectory,
+    SqlMonitoringEvidenceSource,
+)
+from app.inspections.application.ports.inspection_ports import (
+    EvidenceSource,
+    InspectionRepository,
+    ReportGeneratorPort,
+    TechnicianDirectory,
+)
+from app.inspections.application.use_cases.create_inspection import CreateInspectionOnAlert
+from app.inspections.application.use_cases.inspection_pdf import (
+    GenerateInspectionPdf,
+    GetInspectionPdf,
+)
+from app.inspections.application.use_cases.workflow import (
+    AddInspectionPhoto,
+    AssignInspection,
+    CloseInspection,
+    GetInspection,
+    ListInspections,
+    SaveInspectionForm,
+)
 from app.monitoring.adapters.inbound.anomalies_admin_router import build_anomalies_admin_router
 from app.monitoring.adapters.inbound.anomalies_router import build_anomalies_router
 from app.monitoring.adapters.inbound.hotspots_router import build_hotspots_router
@@ -471,6 +497,19 @@ def provide_list_reports(
     return ListReports(reports, storage)
 
 
+# --- inspections: tickets ---------------------------------------------------------------
+
+
+def provide_inspection_repository(session: SessionDep) -> InspectionRepository:
+    return SqlAlchemyInspectionRepository(session)
+
+
+def provide_create_inspection(
+    inspections: Annotated[InspectionRepository, Depends(provide_inspection_repository)],
+) -> CreateInspectionOnAlert:
+    return CreateInspectionOnAlert(inspections)
+
+
 # --- event publisher: wires every subscriber (needs the blocks above) ---------------------
 
 
@@ -479,10 +518,12 @@ def provide_event_publisher(
     create_alert: Annotated[CreateAlertOnAnomalyConfirmed, Depends(provide_create_alert)],
     notify_alert: Annotated[NotifyAlertRecipients, Depends(provide_notify_alert)],
     create_missions: Annotated[CreateVerificationMissions, Depends(provide_create_missions)],
+    create_inspection: Annotated[CreateInspectionOnAlert, Depends(provide_create_inspection)],
 ) -> EventPublisher:
     bus.subscribe(AnomalyConfirmed, create_alert.handle)
     bus.subscribe(AlertCreated, notify_alert.handle)
     bus.subscribe(AnomalyDetected, create_missions.handle)
+    bus.subscribe(AlertCreated, create_inspection.handle)
     return bus
 
 
@@ -505,6 +546,92 @@ def provide_ensure_anomaly_images(
     storage: Annotated[StoragePort, Depends(provide_storage)],
 ) -> EnsureAnomalyImages:
     return EnsureAnomalyImages(anomalies, satellite, storage)
+
+
+# --- inspections: workflow and PDF report ----------------------------------------------
+
+
+def provide_public_app_url() -> str:
+    return get_settings().public_app_url
+
+
+def provide_technician_directory(session: SessionDep) -> TechnicianDirectory:
+    return SqlAlchemyTechnicianDirectory(session)
+
+
+def provide_evidence_source(
+    session: SessionDep,
+    ensure_images: Annotated[EnsureAnomalyImages, Depends(provide_ensure_anomaly_images)],
+    readings: Annotated[IndexReadingRepository, Depends(provide_index_reading_repository)],
+) -> EvidenceSource:
+    return SqlMonitoringEvidenceSource(session, ensure_images, readings)
+
+
+@lru_cache
+def provide_report_generator() -> ReportGeneratorPort:
+    return ReportLabPdfGenerator()
+
+
+def provide_generate_pdf(
+    inspections: Annotated[InspectionRepository, Depends(provide_inspection_repository)],
+    evidence: Annotated[EvidenceSource, Depends(provide_evidence_source)],
+    storage: Annotated[StoragePort, Depends(provide_storage)],
+    generator: Annotated[ReportGeneratorPort, Depends(provide_report_generator)],
+    public_url: Annotated[str, Depends(provide_public_app_url)],
+) -> GenerateInspectionPdf:
+    return GenerateInspectionPdf(inspections, evidence, storage, generator, public_url)
+
+
+def provide_get_inspection_pdf(
+    inspections: Annotated[InspectionRepository, Depends(provide_inspection_repository)],
+    pdf: Annotated[GenerateInspectionPdf, Depends(provide_generate_pdf)],
+) -> GetInspectionPdf:
+    return GetInspectionPdf(inspections, pdf)
+
+
+def provide_list_inspections(
+    inspections: Annotated[InspectionRepository, Depends(provide_inspection_repository)],
+    storage: Annotated[StoragePort, Depends(provide_storage)],
+) -> ListInspections:
+    return ListInspections(inspections, storage)
+
+
+def provide_get_inspection(
+    inspections: Annotated[InspectionRepository, Depends(provide_inspection_repository)],
+    storage: Annotated[StoragePort, Depends(provide_storage)],
+) -> GetInspection:
+    return GetInspection(inspections, storage)
+
+
+def provide_assign_inspection(
+    inspections: Annotated[InspectionRepository, Depends(provide_inspection_repository)],
+    technicians: Annotated[TechnicianDirectory, Depends(provide_technician_directory)],
+    notifiers: Annotated[list[NotificationPort], Depends(provide_notifiers)],
+    storage: Annotated[StoragePort, Depends(provide_storage)],
+) -> AssignInspection:
+    return AssignInspection(inspections, technicians, notifiers, storage)
+
+
+def provide_add_inspection_photo(
+    inspections: Annotated[InspectionRepository, Depends(provide_inspection_repository)],
+    storage: Annotated[StoragePort, Depends(provide_storage)],
+) -> AddInspectionPhoto:
+    return AddInspectionPhoto(inspections, storage)
+
+
+def provide_save_inspection_form(
+    inspections: Annotated[InspectionRepository, Depends(provide_inspection_repository)],
+    storage: Annotated[StoragePort, Depends(provide_storage)],
+) -> SaveInspectionForm:
+    return SaveInspectionForm(inspections, storage)
+
+
+def provide_close_inspection(
+    inspections: Annotated[InspectionRepository, Depends(provide_inspection_repository)],
+    pdf: Annotated[GenerateInspectionPdf, Depends(provide_generate_pdf)],
+    storage: Annotated[StoragePort, Depends(provide_storage)],
+) -> CloseInspection:
+    return CloseInspection(inspections, pdf, storage)
 
 
 # --- monitoring: scan and confirm (publish events) ------------------------------------
@@ -586,6 +713,19 @@ def create_app() -> FastAPI:
         build_alerts_router(auth, provide_list_alerts, provide_get_alert), prefix="/api"
     )
     app.include_router(build_public_alerts_router(provide_get_alert), prefix="/api")
+    app.include_router(
+        build_inspections_router(
+            auth,
+            provide_list_inspections,
+            provide_get_inspection,
+            provide_assign_inspection,
+            provide_add_inspection_photo,
+            provide_save_inspection_form,
+            provide_close_inspection,
+            provide_get_inspection_pdf,
+        ),
+        prefix="/api",
+    )
     app.include_router(
         build_reports_router(auth, provide_create_report, provide_list_reports), prefix="/api"
     )

@@ -13,6 +13,11 @@ class StoragePort(Protocol):
         Raises ServiceUnavailableError on failure."""
         ...
 
+    def download(self, path: str) -> bytes:
+        """The object's bytes. Raises NotFoundError if it does not exist and
+        ServiceUnavailableError if the storage cannot be reached."""
+        ...
+
     def delete(self, paths: Sequence[str]) -> None:
         """Remove the objects (missing ones are ignored). Raises ServiceUnavailableError."""
         ...

@@ -56,6 +56,16 @@ class InMemoryIndexReadingRepository:
         for r in readings:
             self.rows[(r.zone_id, r.index, r.observed_on)] = r
 
+    def find(self, zone_id: UUID, start: date, end: date) -> list[IndexReading]:
+        return sorted(
+            (
+                r
+                for r in self.rows.values()
+                if r.zone_id == zone_id and start <= r.observed_on <= end
+            ),
+            key=lambda r: (r.observed_on, r.index.value),
+        )
+
 
 class InMemoryFireHotspotRepository:
     def __init__(self, hotspots: Sequence[FireHotspot] = ()) -> None:

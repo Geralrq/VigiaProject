@@ -19,7 +19,6 @@ from app.reports.domain.mission import (
     MissionDetail,
     mission_id,
 )
-from app.reports.domain.photo import evidence_path, validate_photo
 from app.reports.domain.verification import (
     MAX_MISSIONS,
     OPEN_STATES,
@@ -33,6 +32,7 @@ from app.reports.domain.verification import (
 from app.shared.application.ports.storage import StoragePort
 from app.shared.domain.errors import AuthorizationError, ConflictError, NotFoundError
 from app.shared.domain.events import AnomalyDetected, Recipient
+from app.shared.domain.photo import evidence_path, validate_photo
 
 logger = logging.getLogger(__name__)
 

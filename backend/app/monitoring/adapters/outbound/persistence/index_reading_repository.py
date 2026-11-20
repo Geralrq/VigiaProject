@@ -1,10 +1,14 @@
 from collections.abc import Sequence
+from datetime import date
+from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.monitoring.adapters.outbound.persistence.models import IndexReadingModel
 from app.monitoring.domain.index_reading import IndexReading
+from app.monitoring.domain.spectral import SpectralIndex
 
 
 def to_values(reading: IndexReading) -> dict[str, object]:
@@ -33,3 +37,24 @@ class SqlAlchemyIndexReadingRepository:
         )
         with self._session.begin_nested():  # savepoint: a failure only undoes this batch
             self._session.execute(stmt)
+
+    def find(self, zone_id: UUID, start: date, end: date) -> list[IndexReading]:
+        stmt = (
+            select(IndexReadingModel)
+            .where(
+                IndexReadingModel.zone_id == zone_id,
+                IndexReadingModel.fecha >= start,
+                IndexReadingModel.fecha <= end,
+            )
+            .order_by(IndexReadingModel.fecha, IndexReadingModel.indice)
+        )
+        return [
+            IndexReading(
+                zone_id=row.zone_id,
+                index=SpectralIndex(row.indice),
+                observed_on=row.fecha,
+                value=row.valor,
+                cloud_pct=row.nubosidad or 0.0,
+            )
+            for row in self._session.scalars(stmt)
+        ]

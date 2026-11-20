@@ -44,6 +44,15 @@ class Settings(BaseSettings):
     )
     firms_map_key: SecretStr = SecretStr("")
     telegram_bot_token: SecretStr = SecretStr("")
+    telegram_bot_username: str = ""  # only to build the t.me deep link
+    # Telegram echoes this in X-Telegram-Bot-Api-Secret-Token on every webhook call.
+    telegram_webhook_secret: SecretStr = SecretStr("")
+    # HMAC key for the /start link codes (kept apart from the webhook secret).
+    telegram_link_secret: SecretStr = SecretStr("")
+    # Base URL of the web app, used in the /a/{id} links of notifications.
+    public_app_url: str = "http://localhost:3000"
+    # A scan whose anomaly reaches this confidence raises AnomalyConfirmed by itself.
+    critical_confidence_threshold: float = Field(0.75, ge=0, le=1)
     llm_api_key: SecretStr = SecretStr("")
     llm_model: str = ""
 

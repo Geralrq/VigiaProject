@@ -1,3 +1,4 @@
+import dataclasses
 import math
 from dataclasses import dataclass
 from datetime import datetime
@@ -46,3 +47,11 @@ class Anomaly:
             raise DomainValidationError("La magnitud debe ser un número no negativo.")
         if not 0 <= self.confidence <= 1:
             raise DomainValidationError("La confianza debe estar entre 0 y 1.")
+
+    def confirm(self) -> "Anomaly":
+        """Copy in CONFIRMADA state. Confirming twice is a no-op; a false positive cannot be."""
+        if self.state is AnomalyState.FALSE_POSITIVE:
+            raise DomainValidationError(
+                "Una anomalía descartada como falso positivo no puede confirmarse."
+            )
+        return dataclasses.replace(self, state=AnomalyState.CONFIRMED)

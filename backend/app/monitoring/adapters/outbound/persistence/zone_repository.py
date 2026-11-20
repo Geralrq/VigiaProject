@@ -1,4 +1,5 @@
 import json
+from uuid import UUID
 
 import shapely
 from geoalchemy2.shape import from_shape, to_shape
@@ -45,6 +46,10 @@ class SqlAlchemyZoneRepository:
         if only_active:
             stmt = stmt.where(ZoneModel.activa.is_(True))
         return [to_domain(row) for row in self._session.scalars(stmt)]
+
+    def get(self, zone_id: UUID) -> Zone | None:
+        row = self._session.get(ZoneModel, zone_id)
+        return to_domain(row) if row is not None else None
 
     def add(self, zone: Zone) -> None:
         self._session.add(to_row(zone))

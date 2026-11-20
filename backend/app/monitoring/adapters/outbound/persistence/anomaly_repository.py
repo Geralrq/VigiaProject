@@ -1,9 +1,10 @@
 import json
+from uuid import UUID
 
 import shapely
 from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import shape
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -62,6 +63,17 @@ class SqlAlchemyAnomalyRepository:
         )
         with self._session.begin_nested():
             self._session.execute(stmt)
+
+    def get(self, anomaly_id: UUID) -> Anomaly | None:
+        row = self._session.get(AnomalyModel, anomaly_id)
+        return to_domain(row) if row is not None else None
+
+    def update_state(self, anomaly: Anomaly) -> None:
+        self._session.execute(
+            update(AnomalyModel)
+            .where(AnomalyModel.id == anomaly.id)
+            .values(estado=anomaly.state.value)
+        )
 
     def find(self, query: GeoQuery) -> list[Anomaly]:
         stmt = select(AnomalyModel).order_by(AnomalyModel.creada_en.desc()).limit(query.limit)

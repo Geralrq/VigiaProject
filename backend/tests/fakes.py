@@ -34,6 +34,9 @@ class InMemoryZoneRepository:
         zones = sorted(self.zones, key=lambda z: z.name)
         return [z for z in zones if z.active] if only_active else zones
 
+    def get(self, zone_id: UUID) -> Zone | None:
+        return next((z for z in self.zones if z.id == zone_id), None)
+
     def add(self, zone: Zone) -> None:
         self.zones.append(zone)
 
@@ -82,6 +85,12 @@ class InMemoryAnomalyRepository:
                 anomaly, state=existing.state, detected_at=existing.detected_at
             )
         self.rows[anomaly.id] = anomaly
+
+    def get(self, anomaly_id: UUID) -> Anomaly | None:
+        return self.rows.get(anomaly_id)
+
+    def update_state(self, anomaly: Anomaly) -> None:
+        self.rows[anomaly.id] = dataclasses.replace(self.rows[anomaly.id], state=anomaly.state)
 
     def find(self, query: GeoQuery) -> list[Anomaly]:
         return [

@@ -14,6 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.shared.domain.errors import (
     AuthenticationError,
     AuthorizationError,
+    ConflictError,
     DomainError,
     DomainValidationError,
     NotFoundError,
@@ -28,6 +29,7 @@ STATUS_BY_ERROR: dict[type[DomainError], int] = {
     AuthenticationError: 401,
     AuthorizationError: 403,
     NotFoundError: 404,
+    ConflictError: 409,
     DomainValidationError: 422,
     ServiceUnavailableError: 503,
 }

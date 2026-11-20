@@ -14,6 +14,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
+from app.alerts.adapters.inbound.alerts_router import (
+    build_alerts_router,
+    build_public_alerts_router,
+)
+from app.alerts.adapters.outbound.persistence.alert_repository import SqlAlchemyAlertRepository
+from app.alerts.adapters.outbound.persistence.recipient_finder import SqlAlchemyRecipientFinder
+from app.alerts.application.ports.alert_repository import AlertRepository
+from app.alerts.application.ports.recipient_finder import RecipientFinder
+from app.alerts.application.use_cases.create_alert import CreateAlertOnAnomalyConfirmed
+from app.alerts.application.use_cases.get_alert import GetAlert
+from app.alerts.application.use_cases.list_alerts import ListAlerts
+from app.monitoring.adapters.inbound.anomalies_admin_router import build_anomalies_admin_router
 from app.monitoring.adapters.inbound.anomalies_router import build_anomalies_router
 from app.monitoring.adapters.inbound.hotspots_router import build_hotspots_router
 from app.monitoring.adapters.inbound.scan_router import build_scan_router
@@ -46,11 +58,34 @@ from app.monitoring.application.ports.fire_hotspot_repository import FireHotspot
 from app.monitoring.application.ports.index_reading_repository import IndexReadingRepository
 from app.monitoring.application.ports.satellite_index_port import SatelliteIndexPort
 from app.monitoring.application.ports.zone_repository import ZoneRepository
+from app.monitoring.application.use_cases.confirm_anomaly import ConfirmAnomaly
 from app.monitoring.application.use_cases.create_zone import CreateZone
 from app.monitoring.application.use_cases.list_anomalies import ListAnomalies
 from app.monitoring.application.use_cases.list_hotspots import ListHotspots
 from app.monitoring.application.use_cases.list_zones import ListZones
 from app.monitoring.application.use_cases.scan_zones import ScanZones
+from app.notifications.adapters.inbound.telegram_router import (
+    build_telegram_router,
+    build_webhook_guard,
+)
+from app.notifications.adapters.outbound.persistence.chat_link_repository import (
+    SqlAlchemyChatLinkRepository,
+)
+from app.notifications.adapters.outbound.persistence.web_adapter import WebNotificationAdapter
+from app.notifications.adapters.outbound.sms_adapter import SimulatedSmsAdapter
+from app.notifications.adapters.outbound.telegram_adapter import TelegramAdapter
+from app.notifications.application.ports.chat_link_repository import ChatLinkRepository
+from app.notifications.application.ports.notification_port import (
+    NotificationPort,
+    TelegramChatPort,
+)
+from app.notifications.application.use_cases.notify_alert import NotifyAlertRecipients
+from app.notifications.application.use_cases.telegram_linking import (
+    HandleTelegramMessage,
+    IssueTelegramLinkCode,
+    SetTelegramChat,
+)
+from app.notifications.domain.link_code import LinkCodeSigner
 from app.shared.adapters.inbound.health import router as health_router
 from app.shared.adapters.inbound.problems import register_problem_handlers
 from app.shared.adapters.inbound.security import build_auth_dependencies, build_cron_guard
@@ -58,12 +93,15 @@ from app.shared.adapters.outbound.auth.jwks_token_verifier import (
     JwksTokenVerifier,
     build_jwk_client,
 )
+from app.shared.adapters.outbound.events.in_memory_bus import InMemoryEventBus
 from app.shared.adapters.outbound.persistence.engine import build_engine
 from app.shared.adapters.outbound.persistence.profile_repository import (
     SqlAlchemyProfileRepository,
 )
 from app.shared.application.ports.auth import ProfileRepository, TokenVerifier
+from app.shared.application.ports.events import EventPublisher
 from app.shared.application.use_cases.authenticate_user import AuthenticateUser
+from app.shared.domain.events import AlertCreated, AnomalyConfirmed
 from app.shared.settings import get_settings
 
 CORS_ORIGINS = ["http://localhost:3000"]
@@ -110,6 +148,125 @@ def provide_authenticate_user(
 
 
 auth = build_auth_dependencies(provide_authenticate_user)
+
+
+# --- shared: event bus, alerts and notifications ----------------------------------------
+
+
+def provide_critical_confidence() -> float:
+    return get_settings().critical_confidence_threshold
+
+
+# provide_event_bus -> (alerts, notifiers) -> provide_event_publisher: the handlers need the
+# bus to publish follow-up events, so the subscriptions are wired in a second step.
+
+
+def provide_event_bus() -> InMemoryEventBus:
+    """One bus per request (FastAPI caches the dependency within a request)."""
+    return InMemoryEventBus()
+
+
+def provide_alert_repository(session: SessionDep) -> AlertRepository:
+    return SqlAlchemyAlertRepository(session)
+
+
+def provide_recipient_finder(session: SessionDep) -> RecipientFinder:
+    return SqlAlchemyRecipientFinder(session)
+
+
+@lru_cache  # singleton: one HTTP client for the Telegram API
+def provide_telegram_adapter() -> TelegramAdapter:
+    settings = get_settings()
+    return TelegramAdapter(settings.telegram_bot_token.get_secret_value(), settings.public_app_url)
+
+
+def provide_telegram_chat() -> TelegramChatPort:
+    return provide_telegram_adapter()
+
+
+def provide_notifiers(session: SessionDep) -> list[NotificationPort]:
+    public_url = get_settings().public_app_url
+    return [
+        WebNotificationAdapter(session, public_url),
+        provide_telegram_adapter(),
+        SimulatedSmsAdapter(public_url),
+    ]
+
+
+def provide_create_alert(
+    bus: Annotated[InMemoryEventBus, Depends(provide_event_bus)],
+    alerts: Annotated[AlertRepository, Depends(provide_alert_repository)],
+    recipients: Annotated[RecipientFinder, Depends(provide_recipient_finder)],
+) -> CreateAlertOnAnomalyConfirmed:
+    return CreateAlertOnAnomalyConfirmed(alerts, recipients, bus)
+
+
+def provide_notify_alert(
+    notifiers: Annotated[list[NotificationPort], Depends(provide_notifiers)],
+) -> NotifyAlertRecipients:
+    return NotifyAlertRecipients(notifiers)
+
+
+def provide_event_publisher(
+    bus: Annotated[InMemoryEventBus, Depends(provide_event_bus)],
+    create_alert: Annotated[CreateAlertOnAnomalyConfirmed, Depends(provide_create_alert)],
+    notify_alert: Annotated[NotifyAlertRecipients, Depends(provide_notify_alert)],
+) -> EventPublisher:
+    bus.subscribe(AnomalyConfirmed, create_alert.handle)
+    bus.subscribe(AlertCreated, notify_alert.handle)
+    return bus
+
+
+def provide_list_alerts(
+    alerts: Annotated[AlertRepository, Depends(provide_alert_repository)],
+) -> ListAlerts:
+    return ListAlerts(alerts)
+
+
+def provide_get_alert(
+    alerts: Annotated[AlertRepository, Depends(provide_alert_repository)],
+) -> GetAlert:
+    return GetAlert(alerts)
+
+
+def provide_chat_link_repository(session: SessionDep) -> ChatLinkRepository:
+    return SqlAlchemyChatLinkRepository(session)
+
+
+def provide_link_code_signer() -> LinkCodeSigner:
+    return LinkCodeSigner(get_settings().telegram_link_secret.get_secret_value())
+
+
+def provide_issue_link_code(
+    signer: Annotated[LinkCodeSigner, Depends(provide_link_code_signer)],
+) -> IssueTelegramLinkCode:
+    return IssueTelegramLinkCode(signer)
+
+
+def provide_set_telegram_chat(
+    links: Annotated[ChatLinkRepository, Depends(provide_chat_link_repository)],
+) -> SetTelegramChat:
+    # A hand-typed chat id could point alerts at someone else's chat: demo/test only.
+    return SetTelegramChat(links, allow_manual=get_settings().app_mode != "live")
+
+
+def provide_handle_telegram_message(
+    signer: Annotated[LinkCodeSigner, Depends(provide_link_code_signer)],
+    links: Annotated[ChatLinkRepository, Depends(provide_chat_link_repository)],
+    chat: Annotated[TelegramChatPort, Depends(provide_telegram_chat)],
+) -> HandleTelegramMessage:
+    return HandleTelegramMessage(signer, links, chat)
+
+
+def provide_telegram_bot_username() -> str:
+    return get_settings().telegram_bot_username
+
+
+def provide_telegram_webhook_secret() -> str:
+    return get_settings().telegram_webhook_secret.get_secret_value()
+
+
+telegram_webhook_guard = build_webhook_guard(provide_telegram_webhook_secret)
 
 
 # --- monitoring: zones ----------------------------------------------------------------
@@ -184,8 +341,28 @@ def provide_scan_zones(
     hotspots: Annotated[FireHotspotRepository, Depends(provide_fire_hotspot_repository)],
     anomalies: Annotated[AnomalyRepository, Depends(provide_anomaly_repository)],
     carbon: Annotated[CarbonFactorRepository, Depends(provide_carbon_factor_repository)],
+    events: Annotated[EventPublisher, Depends(provide_event_publisher)],
+    critical_confidence: Annotated[float, Depends(provide_critical_confidence)],
 ) -> ScanZones:
-    return ScanZones(zones, satellite, fire_source, readings, hotspots, anomalies, carbon)
+    return ScanZones(
+        zones,
+        satellite,
+        fire_source,
+        readings,
+        hotspots,
+        anomalies,
+        carbon,
+        events=events,
+        critical_confidence=critical_confidence,
+    )
+
+
+def provide_confirm_anomaly(
+    anomalies: Annotated[AnomalyRepository, Depends(provide_anomaly_repository)],
+    zones: Annotated[ZoneRepository, Depends(provide_zone_repository)],
+    events: Annotated[EventPublisher, Depends(provide_event_publisher)],
+) -> ConfirmAnomaly:
+    return ConfirmAnomaly(anomalies, zones, events)
 
 
 def provide_list_anomalies(
@@ -221,4 +398,20 @@ def create_app() -> FastAPI:
     app.include_router(build_scan_router(auth, cron_guard, provide_scan_zones), prefix="/api")
     app.include_router(build_anomalies_router(auth, provide_list_anomalies), prefix="/api")
     app.include_router(build_hotspots_router(auth, provide_list_hotspots), prefix="/api")
+    app.include_router(build_anomalies_admin_router(auth, provide_confirm_anomaly), prefix="/api")
+    app.include_router(
+        build_alerts_router(auth, provide_list_alerts, provide_get_alert), prefix="/api"
+    )
+    app.include_router(build_public_alerts_router(provide_get_alert), prefix="/api")
+    app.include_router(
+        build_telegram_router(
+            auth,
+            telegram_webhook_guard,
+            provide_issue_link_code,
+            provide_set_telegram_chat,
+            provide_handle_telegram_message,
+            provide_telegram_bot_username,
+        ),
+        prefix="/api",
+    )
     return app

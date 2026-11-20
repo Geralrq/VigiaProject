@@ -18,6 +18,10 @@ class NotFoundError(DomainError):
     pass
 
 
+class ConflictError(DomainError):
+    """The request clashes with the current state (e.g. a unique value already taken)."""
+
+
 class DomainValidationError(DomainError):
     """A domain invariant was violated by the input."""
 

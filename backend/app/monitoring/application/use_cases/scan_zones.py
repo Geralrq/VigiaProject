@@ -12,16 +12,19 @@ from app.monitoring.application.ports.fire_hotspot_repository import FireHotspot
 from app.monitoring.application.ports.index_reading_repository import IndexReadingRepository
 from app.monitoring.application.ports.satellite_index_port import SatelliteIndexPort
 from app.monitoring.application.ports.zone_repository import ZoneRepository
-from app.monitoring.domain.anomaly import Anomaly
+from app.monitoring.application.use_cases.confirm_anomaly import anomaly_confirmed_event
+from app.monitoring.domain.anomaly import Anomaly, AnomalyState
 from app.monitoring.domain.detection import detect_anomaly
 from app.monitoring.domain.geo import BBox
 from app.monitoring.domain.scan_window import ScanWindow
 from app.monitoring.domain.zone import Zone
+from app.shared.application.ports.events import EventPublisher
 from app.shared.domain.errors import DomainError
 
 logger = logging.getLogger(__name__)
 
 MAX_CONCURRENT_ZONES = 5
+DEFAULT_CRITICAL_CONFIDENCE = 0.75
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,7 +55,9 @@ class ScanZones:
     """Scan every active zone: fetch indices + hotspots, detect, persist (idempotently).
 
     Zones run concurrently (at most MAX_CONCURRENT_ZONES at once). A failing zone is
-    logged and reported in the summary; the others still complete.
+    logged and reported in the summary; the others still complete. Every detected anomaly
+    whose confidence reaches `critical_confidence` is announced with AnomalyConfirmed
+    (re-scans re-announce it; the alerts subscriber is idempotent).
     """
 
     def __init__(
@@ -65,6 +70,8 @@ class ScanZones:
         anomalies: AnomalyRepository,
         carbon_factors: CarbonFactorRepository,
         *,
+        events: EventPublisher | None = None,
+        critical_confidence: float = DEFAULT_CRITICAL_CONFIDENCE,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         max_concurrency: int = MAX_CONCURRENT_ZONES,
     ) -> None:
@@ -75,6 +82,8 @@ class ScanZones:
         self._hotspots = hotspots
         self._anomalies = anomalies
         self._carbon_factors = carbon_factors
+        self._events = events
+        self._critical_confidence = critical_confidence
         self._clock = clock
         self._max_concurrency = max_concurrency
 
@@ -96,6 +105,7 @@ class ScanZones:
 
         outcomes = await asyncio.gather(*(guarded(z) for z in zones))
         results = [o for o in outcomes if isinstance(o, _ZoneScanResult)]
+        self._announce_critical(results, {z.id: z.name for z in zones})
         return ScanSummary(
             window=window,
             zones_scanned=len(zones),
@@ -120,3 +130,18 @@ class ScanZones:
         if anomaly is not None:
             self._anomalies.save(anomaly)
         return _ZoneScanResult(len(readings), len(hotspots), anomaly)
+
+    def _announce_critical(
+        self, results: list[_ZoneScanResult], zone_names: dict[UUID, str]
+    ) -> None:
+        if self._events is None:
+            return
+        for result in results:
+            anomaly = result.anomaly
+            if anomaly is None or anomaly.confidence < self._critical_confidence:
+                continue
+            stored = self._anomalies.get(anomaly.id)  # a scan never overwrites the state
+            if stored is not None and stored.state is AnomalyState.FALSE_POSITIVE:
+                continue
+            name = zone_names.get(anomaly.zone_id, "—")
+            self._events.publish(anomaly_confirmed_event(anomaly, name))

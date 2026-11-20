@@ -61,6 +61,8 @@ class Settings(BaseSettings):
     mission_radius_m: float = Field(10_000.0, gt=0)
     mission_base_points: int = Field(10, ge=0)
     mission_bonus_points: int = Field(5, ge=0)
+    # Password given to the dev users created by scripts/create_dev_users.py (demo mode only).
+    dev_users_password: SecretStr = SecretStr("")
     llm_api_key: SecretStr = SecretStr("")
     llm_model: str = ""
 

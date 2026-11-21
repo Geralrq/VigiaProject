@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return process.env.VERCEL
       ? []
-      : [{ source: "/api/:path*", destination: "http://localhost:8000/api/:path*" }];
+      : [{ source: "/api/:path*", destination: `http://localhost:${process.env.BACKEND_PORT ?? "8000"}/api/:path*` }];
   },
 };
 

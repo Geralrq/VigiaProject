@@ -45,6 +45,7 @@ from app.bootstrap import (
     provide_telegram_chat,
     provide_telegram_webhook_secret,
     provide_token_verifier,
+    provide_user_admin_repository,
     provide_user_directory,
     provide_zone_repository,
 )
@@ -79,7 +80,11 @@ from tests.fakes_inspections import (
     InMemoryInspectionRepository,
     InMemoryTechnicianDirectory,
 )
-from tests.fakes_profile import InMemoryMyProfileRepository, InMemoryUserDirectory
+from tests.fakes_profile import (
+    InMemoryMyProfileRepository,
+    InMemoryUserAdminRepository,
+    InMemoryUserDirectory,
+)
 from tests.fakes_reports import (
     FakeCandidateFinder,
     InMemoryMissionRepository,
@@ -234,6 +239,13 @@ def users(profiles: InMemoryProfileRepository) -> InMemoryUserDirectory:
 
 
 @pytest.fixture
+def user_admin(
+    profiles: InMemoryProfileRepository, my_profiles: InMemoryMyProfileRepository
+) -> InMemoryUserAdminRepository:
+    return InMemoryUserAdminRepository(profiles, my_profiles)
+
+
+@pytest.fixture
 def inspections(
     alerts: InMemoryAlertRepository,
     anomalies: InMemoryAnomalyRepository,
@@ -312,6 +324,7 @@ def client(
     scores: InMemoryScoreRepository,
     my_profiles: InMemoryMyProfileRepository,
     users: InMemoryUserDirectory,
+    user_admin: InMemoryUserAdminRepository,
     inspections: InMemoryInspectionRepository,
     technicians: InMemoryTechnicianDirectory,
     evidence: FakeEvidenceSource,
@@ -343,6 +356,7 @@ def client(
         provide_storage: lambda: storage,
         provide_my_profile_repository: lambda: my_profiles,
         provide_user_directory: lambda: users,
+        provide_user_admin_repository: lambda: user_admin,
         provide_inspection_repository: lambda: inspections,
         provide_technician_directory: lambda: technicians,
         provide_evidence_source: lambda: evidence,

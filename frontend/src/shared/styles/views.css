@@ -360,8 +360,142 @@ input[type="file"]::file-selector-button:hover {
   margin-top: var(--space-4);
 }
 
+/* --- Gestión de usuarios (tabla con filetes, sin tarjetas) --- */
+.users-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.users-count {
+  margin: 0 0 var(--space-3);
+  min-height: calc(var(--line-height) * 1em); /* reserva la línea: sin salto al cargar */
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.users-announcement {
+  color: var(--color-text);
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.users-table th,
+.users-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width) solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.users-table thead th {
+  color: var(--color-text-muted);
+  font-weight: 400;
+  border-bottom-color: var(--color-border-control);
+}
+
+.users-table tbody th {
+  font-weight: 600;
+}
+
+.users-table .numeric {
+  text-align: right;
+}
+
+.users-table tbody tr:hover {
+  background: var(--color-surface-raised);
+}
+
+.users-table[aria-busy="true"] tbody {
+  opacity: 0.6;
+}
+
+.users-name {
+  overflow-wrap: anywhere;
+}
+
+.users-role {
+  min-width: var(--select-min-width);
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
 /* --- Pantallas angostas (celular) --- */
 @media (max-width: 52rem) {
+  .users-filters {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  /* Cada fila se vuelve un bloque con etiquetas: sin desplazamiento horizontal. */
+  .users-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .users-table,
+  .users-table tbody,
+  .users-table tr,
+  .users-table th,
+  .users-table td {
+    display: block;
+  }
+
+  .users-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+
+  .users-table tbody th,
+  .users-table tbody td {
+    padding: 0;
+    border: 0;
+  }
+
+  .users-table tbody th,
+  .users-table tbody td[data-label="Rol"] {
+    grid-column: 1 / -1;
+  }
+
+  .users-table tbody td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--color-text-muted);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+  }
+
+  .users-table .numeric {
+    text-align: left;
+  }
+
+  .users-role {
+    min-width: 0;
+  }
+
+  .pager button {
+    flex: 1;
+  }
+
   .app-header {
     padding-top: var(--space-2);
   }

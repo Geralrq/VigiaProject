@@ -5,6 +5,8 @@
 import type { IconProps } from "@phosphor-icons/react/dist/lib/types";
 import { ArrowClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
 import { CameraIcon } from "@phosphor-icons/react/dist/csr/Camera";
+import { CaretLeftIcon } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { ClipboardTextIcon } from "@phosphor-icons/react/dist/csr/ClipboardText";
 import { DownloadSimpleIcon } from "@phosphor-icons/react/dist/csr/DownloadSimple";
@@ -15,6 +17,7 @@ import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
 import { StackIcon } from "@phosphor-icons/react/dist/csr/Stack";
 import { TrophyIcon } from "@phosphor-icons/react/dist/csr/Trophy";
 import { UserIcon } from "@phosphor-icons/react/dist/csr/User";
+import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import { WarningIcon } from "@phosphor-icons/react/dist/csr/Warning";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import type { ComponentType } from "react";
@@ -25,6 +28,9 @@ const UI_ICONS = {
   inspecciones: ClipboardTextIcon,
   ranking: TrophyIcon,
   perfil: UserIcon,
+  usuarios: UsersThreeIcon,
+  anterior: CaretLeftIcon,
+  siguiente: CaretRightIcon,
   salir: SignOutIcon,
   cerrar: XIcon,
   reintentar: ArrowClockwiseIcon,

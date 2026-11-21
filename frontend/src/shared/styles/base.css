@@ -128,7 +128,8 @@ button:disabled {
 input:not([type]),
 input[type="text"],
 input[type="email"],
-input[type="password"] {
+input[type="password"],
+input[type="search"] {
   width: 100%;
   min-height: var(--touch-target);
   padding: var(--space-2) var(--space-3);

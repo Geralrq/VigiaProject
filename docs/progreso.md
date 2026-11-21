@@ -105,3 +105,9 @@
 - Móvil: `/mapa` con `BottomSheet` (Capas, Detalle, Impacto; arrastre y teclado). URL: `?capas=…&sel=anomalia:<id>` (`features/map/url-state.ts`). Leyenda, escala y atribución visibles.
 - Bundle JS (gzip, `.next/static`): 823,1 → 846,6 KB (+23,5 KB; +19 KB en el commit 1 por Phosphor, que trae los 6 pesos por icono). Única dependencia nueva: `@phosphor-icons/react`.
 - Pendiente: probar el arrastre del panel en un celular real; el aviso de Realtime puede tapar contenido del panel inferior en móvil; `deck.gl` (paquete paraguas) ya no se importa y podría quitarse.
+
+## Fase 10b — Gestión de usuarios (ADMIN)
+- Backend (shared, hexagonal): `GET /api/admin/users` (q, rol, page, page_size ≤100; id, nombre, rol, puntos, `created_at`, `has_location`/`telegram_linked` solo booleanos) y `PATCH /api/admin/users/{id}/rol` (409 propio rol o último ADMIN; 404; 422). Bloquea los ADMIN y el destino `FOR UPDATE`; registra quién, a quién y rol anterior → nuevo en el log.
+- Migración `006` aplicada: `profiles.creado_en` (rellenada desde `auth.users.created_at`). SQL probado contra la BD real con rollback. 554 tests, lint-imports y ruff OK.
+- Front: `/admin/usuarios` (menú y guarda solo ADMIN): búsqueda con debounce, filtro por rol, paginación, selector de rol por fila con `ConfirmDialog` (fila propia deshabilitada); en móvil cada fila pasa a bloque con etiquetas. Hooks en `features/admin/api`. Lint, tsc y build OK.
+- Pendiente: revisar la vista en pantalla con sesión ADMIN real.

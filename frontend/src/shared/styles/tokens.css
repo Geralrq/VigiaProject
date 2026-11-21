@@ -85,6 +85,7 @@
   --rail-width: 17rem;
   --detail-width: 24rem;
   --touch-target: 2.75rem;
+  --select-min-width: 11rem; /* selector de rol en tablas: cabe «Administrador» */
   --toast-width: 22rem;
   --bp-stack: 52rem; /* referencia: el @media de base.css usa este mismo valor */
   --z-overlay: 10;

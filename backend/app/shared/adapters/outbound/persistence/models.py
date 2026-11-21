@@ -1,7 +1,18 @@
 import uuid
+from datetime import datetime
 
 from geoalchemy2 import Geography, WKBElement
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Index, Integer, String, text
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Index,
+    Integer,
+    String,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.shared.adapters.outbound.persistence.base import Base
@@ -27,3 +38,4 @@ class ProfileModel(Base):
     )
     puntos: Mapped[int] = mapped_column(Integer, server_default=text("0"))
     es_demo: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))  # fictitious seed
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

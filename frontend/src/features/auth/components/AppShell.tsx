@@ -18,6 +18,7 @@ const NAV_ICONS: Record<string, UiIconName | "mision"> = {
   "/misiones": "mision",
   "/inspecciones": "inspecciones",
   "/ranking": "ranking",
+  "/admin/usuarios": "usuarios",
   "/perfil": "perfil",
 };
 

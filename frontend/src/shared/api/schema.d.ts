@@ -56,6 +56,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar usuarios (ADMIN; búsqueda por nombre, filtro por rol) */
+        get: operations["list_users_api_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/rol": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Cambiar el rol de un usuario (ADMIN; no el propio ni el del último ADMIN) */
+        patch: operations["change_role_api_admin_users__user_id__rol_patch"];
+        trace?: never;
+    };
     "/api/zones": {
         parameters: {
             query?: never;
@@ -831,6 +865,31 @@ export interface components {
             lng: number;
         };
         /**
+         * ManagedUserOut
+         * @description No coordinates and no chat id: only whether they exist.
+         */
+        ManagedUserOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            role: components["schemas"]["Role"];
+            /** Points */
+            points: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Has Location */
+            has_location: boolean;
+            /** Telegram Linked */
+            telegram_linked: boolean;
+        };
+        /**
          * MissionAnswer
          * @enum {string}
          */
@@ -1095,6 +1154,10 @@ export interface components {
          * @enum {string}
          */
         Role: "CIUDADANO" | "GUARDABOSQUES" | "TECNICO" | "AUTORIDAD" | "ADMIN";
+        /** RoleChangeIn */
+        RoleChangeIn: {
+            rol: components["schemas"]["Role"];
+        };
         /** ScanSummaryOut */
         ScanSummaryOut: {
             /**
@@ -1204,6 +1267,17 @@ export interface components {
          * @enum {string}
          */
         Urgency: "BAJA" | "MEDIA" | "ALTA";
+        /** UserPageOut */
+        UserPageOut: {
+            /** Items */
+            items: components["schemas"]["ManagedUserOut"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /**
          * UserSummaryOut
          * @description Only id and name: no email, location, points, chat or any other personal data.
@@ -1484,6 +1558,137 @@ export interface operations {
             };
             /** @description Acceso denegado */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Datos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_users_api_admin_users_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                rol?: components["schemas"]["Role"] | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPageOut"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Acceso denegado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Datos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    change_role_api_admin_users__user_id__rol_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleChangeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedUserOut"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Acceso denegado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflicto */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

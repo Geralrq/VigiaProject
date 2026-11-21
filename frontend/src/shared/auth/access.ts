@@ -33,6 +33,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/misiones", label: "Misiones", roles: ["CIUDADANO", "GUARDABOSQUES"] },
   { href: "/inspecciones", label: "Inspecciones", roles: ["TECNICO", "AUTORIDAD", "ADMIN"] },
   { href: "/ranking", label: "Ranking", roles: ALL_ROLES },
+  { href: "/admin/usuarios", label: "Usuarios", roles: ["ADMIN"] },
   { href: "/perfil", label: "Mi perfil", roles: ALL_ROLES },
 ];
 

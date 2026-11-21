@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     telegram_webhook_secret: SecretStr = SecretStr("")
     # HMAC key for the /start link codes (kept apart from the webhook secret).
     telegram_link_secret: SecretStr = SecretStr("")
+    # Allowed CORS origins (comma-separated JSON list in env, e.g. '["https://app.vercel.app"]').
+    # In production with Vercel Services the frontend and API share the same domain, so CORS is
+    # only relevant for local development; the default covers that case.
+    cors_origins: list[str] = Field(default=["http://localhost:3000"])
     # Base URL of the web app, used in the /a/{id} links of notifications.
     public_app_url: str = "http://localhost:3000"
     # A scan whose anomaly reaches this confidence raises AnomalyConfirmed by itself.

@@ -106,6 +106,16 @@
 - Bundle JS (gzip, `.next/static`): 823,1 → 846,6 KB (+23,5 KB; +19 KB en el commit 1 por Phosphor, que trae los 6 pesos por icono). Única dependencia nueva: `@phosphor-icons/react`.
 - Pendiente: probar el arrastre del panel en un celular real; el aviso de Realtime puede tapar contenido del panel inferior en móvil; `deck.gl` (paquete paraguas) ya no se importa y podría quitarse.
 
+## Fase 11 — Preparación para despliegue en Vercel
+- `vercel.json`: migrado de `experimentalServices` a `services` (sintaxis estable); rewrites explícitos `/api/:path*` → api, `/(.*)` → web; cron conservado (`Authorization: Bearer CRON_SECRET` lo añade Vercel automáticamente).
+- `sentinelhub` eliminado de `pyproject.toml` y `uv.lock` (el adaptador usa solo httpx; nunca se importó el paquete). Transitivas eliminadas: 10 paquetes.
+- `deck.gl` (barrel) eliminado de `package.json`; solo se usan `@deck.gl/aggregation-layers` y `@deck.gl/mapbox`.
+- `engine.py`: parámetro `serverless=True` usa `NullPool`; bootstrap lo activa cuando `VERCEL` env var está presente.
+- `settings.py`: `cors_origins` configurable (por defecto `localhost:3000`; en Vercel Services el tráfico es same-domain, CORS no es necesario en producción).
+- `docs/despliegue.md`: pasos UI Vercel, tabla de variables, ajustes Supabase, registro webhook Telegram, checklist posterior, plan B de dos proyectos.
+- 554 tests, lint-imports y ruff OK; tsc y `npm run build` OK (16 rutas).
+- **NO verificado**: que `crons` sea compatible con `services` (documentación de Services no accesible vía fetch); comportamiento exacto del routing del cron hacia el servicio api (se asume que el rewrite `/api/:path*` lo encamina).
+
 ## Fase 10b — Gestión de usuarios (ADMIN)
 - Backend (shared, hexagonal): `GET /api/admin/users` (q, rol, page, page_size ≤100; id, nombre, rol, puntos, `created_at`, `has_location`/`telegram_linked` solo booleanos) y `PATCH /api/admin/users/{id}/rol` (409 propio rol o último ADMIN; 404; 422). Bloquea los ADMIN y el destino `FOR UPDATE`; registra quién, a quién y rol anterior → nuevo en el log.
 - Migración `006` aplicada: `profiles.creado_en` (rellenada desde `auth.users.created_at`). SQL probado contra la BD real con rollback. 554 tests, lint-imports y ruff OK.

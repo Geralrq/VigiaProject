@@ -5,6 +5,7 @@ arguments, so tests swap any of them via `app.dependency_overrides[provide_x]`.
 """
 
 import logging
+import os
 from collections.abc import Iterator
 from functools import lru_cache
 from typing import Annotated
@@ -178,7 +179,6 @@ from app.shared.application.use_cases.my_profile import GetMyProfile, UpdateMyPr
 from app.shared.domain.events import AlertCreated, AnomalyConfirmed, AnomalyDetected
 from app.shared.settings import get_settings
 
-CORS_ORIGINS = ["http://localhost:3000"]
 JWT_AUDIENCE = "authenticated"
 EVIDENCE_BUCKET = "evidencias"  # private Supabase Storage bucket (see migration 003)
 
@@ -188,7 +188,12 @@ EVIDENCE_BUCKET = "evidencias"  # private Supabase Storage bucket (see migration
 
 @lru_cache
 def _engine() -> Engine:
-    return build_engine(get_settings().database_url.get_secret_value())
+    # On Vercel, VERCEL env var is always set. Use NullPool to avoid accumulating idle
+    # connections across concurrent function instances.
+    return build_engine(
+        get_settings().database_url.get_secret_value(),
+        serverless=bool(os.environ.get("VERCEL")),
+    )
 
 
 def provide_session() -> Iterator[Session]:
@@ -737,10 +742,11 @@ def provide_list_hotspots(
 def create_app() -> FastAPI:
     # httpx logs full URLs at INFO; the FIRMS URL carries the map key.
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    settings = get_settings()
     app = FastAPI(title="Vigía API", docs_url="/api/docs", openapi_url="/api/openapi.json")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=CORS_ORIGINS,
+        allow_origins=settings.cors_origins,
         allow_methods=["*"],
         allow_headers=["Authorization", "Content-Type"],
     )

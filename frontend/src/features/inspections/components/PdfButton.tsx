@@ -2,6 +2,7 @@
 
 import { saveBlob } from "@/shared/ui/download";
 import { useInspectionPdf } from "../api/queries";
+import { Icon } from "@/shared/ui/icons/Icon";
 
 /** Descarga el informe PDF. Puede tardar unos segundos la primera vez (se genera al pedirlo). */
 export function PdfButton({ inspectionId }: { inspectionId: string }) {
@@ -16,7 +17,8 @@ export function PdfButton({ inspectionId }: { inspectionId: string }) {
           pdf.mutate(undefined, { onSuccess: (blob) => saveBlob(blob, `informe-${inspectionId}.pdf`) })
         }
       >
-        {pdf.isPending ? "Generando informe…" : "Descargar informe PDF"}
+        <Icon name="informe" size={18} />
+        <span>{pdf.isPending ? "Generando informe…" : "Descargar informe PDF"}</span>
       </button>
       {pdf.isError && (
         <p role="alert" className="error">

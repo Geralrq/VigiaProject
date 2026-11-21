@@ -1,9 +1,18 @@
 import type { AnomalyState, AnomalyType, RiskLevel } from "@/shared/api/types";
+import type { IconName } from "@/shared/ui/icons/paths";
 
 export const ANOMALY_TYPE_LABELS: Record<AnomalyType, string> = {
   DEFORESTACION: "Deforestación",
   INCENDIO: "Incendio",
 };
+
+/** Icono propio de cada tipo de anomalía (el backend envía el tipo como texto). */
+export function anomalyIcon(type: string): IconName {
+  if (type === "INCENDIO") return "incendio";
+  if (type === "DEFORESTACION") return "deforestacion";
+  if (type === "INUNDACION") return "inundacion";
+  return "satelite";
+}
 
 export const ANOMALY_STATE_LABELS: Record<AnomalyState, string> = {
   DETECTADA: "Detectada",

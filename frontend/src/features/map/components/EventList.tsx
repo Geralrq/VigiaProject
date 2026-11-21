@@ -1,7 +1,11 @@
 import type { Selection } from "../selection";
+import { EmptyState } from "@/shared/ui/states";
+import type { IconName } from "@/shared/ui/icons/paths";
+import { Icon } from "@/shared/ui/icons/Icon";
 
 export interface EventItem extends Selection {
   label: string;
+  icon: IconName;
 }
 
 interface Props {
@@ -18,7 +22,9 @@ export function EventList({ items, selected, onSelect }: Props) {
     <section aria-label="Eventos en el área visible">
       <h3>Eventos visibles</h3>
       {items.length === 0 ? (
-        <p className="muted">No hay anomalías ni alertas en el área visible.</p>
+        <EmptyState icon="satelite" title="Nada que revisar aquí">
+          <p>No hay anomalías ni alertas en el área visible. Aleja el mapa o activa más capas.</p>
+        </EmptyState>
       ) : (
         <ul>
           {items.slice(0, MAX_ITEMS).map((item) => {
@@ -30,7 +36,8 @@ export function EventList({ items, selected, onSelect }: Props) {
                   onClick={() => onSelect({ kind: item.kind, id: item.id })}
                   aria-pressed={isSelected}
                 >
-                  {item.label}
+                  <Icon name={item.icon} size={18} />
+                  <span>{item.label}</span>
                 </button>
               </li>
             );

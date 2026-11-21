@@ -3,26 +3,21 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ANOMALY_TYPE_LABELS, formatDate } from "@/features/map/labels";
+import { ANOMALY_TYPE_LABELS, anomalyIcon, formatDate } from "@/features/map/labels";
 import type { AnomalyType, MissionAnswerResult } from "@/shared/api/types";
 import { useMissions } from "../api/queries";
 import { MissionDetail } from "./MissionDetail";
+import { EmptyState, ErrorState, Skeleton } from "@/shared/ui/states";
+import { Icon } from "@/shared/ui/icons/Icon";
 
 export function MissionsView() {
   const missions = useMissions();
   const selectedId = useSearchParams().get("m");
   const [results, setResults] = useState<Record<string, MissionAnswerResult>>({});
 
-  if (missions.isPending) return <p role="status">Cargando tus misiones…</p>;
+  if (missions.isPending) return <Skeleton label="Cargando tus misiones…" variant="list" lines={3} />;
   if (missions.isError) {
-    return (
-      <div role="alert">
-        <p className="error">{missions.error.message}</p>
-        <button type="button" onClick={() => missions.refetch()}>
-          Reintentar
-        </button>
-      </div>
-    );
+    return <ErrorState message={missions.error.message} onRetry={() => missions.refetch()} />;
   }
 
   const items = missions.data;
@@ -32,16 +27,26 @@ export function MissionsView() {
   return (
     <div className="split" data-detail={selected ? "true" : "false"}>
       <section className="split-list" aria-label="Lista de misiones">
-        <p className="muted">
-          {items.length === 0
-            ? "Todavía no tienes misiones."
-            : `${pending} pendiente${pending === 1 ? "" : "s"} de ${items.length}`}
-        </p>
-        {items.length === 0 ? (
-          <p>
-            Cuando se detecte una anomalía cerca de ti, te avisaremos para que la verifiques.
-            Mientras tanto puedes <Link href="/reportar">reportar un problema</Link>.
+        {items.length > 0 && (
+          <p className="muted">
+            {pending} pendiente{pending === 1 ? "" : "s"} de {items.length}
           </p>
+        )}
+        {items.length === 0 ? (
+          <EmptyState
+            icon="mision"
+            title="No tienes misiones"
+            action={
+              <Link className="button" href="/reportar">
+                Reportar un problema
+              </Link>
+            }
+          >
+            <p>
+              Cuando se detecte una anomalía cerca de ti, te avisaremos para que la verifiques.
+              Guarda tu ubicación en tu perfil para recibirlas.
+            </p>
+          </EmptyState>
         ) : (
           <ul className="entry-list">
             {items.map((mission) => {
@@ -53,6 +58,7 @@ export function MissionsView() {
                     aria-current={mission.id === selectedId ? "true" : undefined}
                   >
                     <span className="entry-title">
+                      <Icon name={anomalyIcon(mission.anomaly_type)} size={18} />
                       {type} · {mission.zone_name}
                     </span>
                     <span className="muted">

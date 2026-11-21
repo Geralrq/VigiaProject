@@ -18,6 +18,7 @@ import type { HotspotCollection } from "@/shared/api/types";
 import type { Bbox } from "@/shared/geo";
 import { readNumberToken, readRgbToken, readToken } from "@/shared/styles/tokens";
 import { EMPTY_COLLECTION } from "../geojson";
+import { markerSvg, type IconName } from "@/shared/ui/icons/paths";
 import type { Selection } from "../selection";
 import type { LayerId } from "./LayerPanel";
 
@@ -64,21 +65,46 @@ const COLOMBIA_ZOOM = 5;
 // Capas de MapLibre que se encienden/apagan por cada capa del panel.
 const LAYER_IDS: Record<Exclude<LayerId, "hotspots">, string[]> = {
   zones: ["zones-fill", "zones-line"],
-  anomalies: ["anomalies-fill", "anomalies-line"],
-  alerts: ["alerts-fill", "alerts-line"],
-  reports: ["reports-circle"],
+  anomalies: ["anomalies-fill", "anomalies-line", "anomalies-marker"],
+  alerts: ["alerts-fill", "alerts-line", "alerts-marker"],
+  reports: ["reports-marker"],
 };
 
+// Orden de prioridad al hacer clic: primero los marcadores, luego los polígonos.
 const CLICKABLE: { layerId: string; kind: Selection["kind"] }[] = [
+  { layerId: "anomalies-marker", kind: "anomaly" },
+  { layerId: "alerts-marker", kind: "alert" },
   { layerId: "anomalies-fill", kind: "anomaly" },
   { layerId: "alerts-fill", kind: "alert" },
 ];
+
+/** Registra en MapLibre un marcador dibujado con los iconos propios (ver shared/ui/icons). */
+async function addMarker(map: MapLibreMap, id: string, icon: IconName, color: string): Promise<void> {
+  const image = new Image(64, 64);
+  image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markerSvg(icon, color, readToken("--color-bg")))}`;
+  try {
+    await image.decode();
+    if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: 2 });
+  } catch {
+    // Sin el marcador la capa no dibuja ese símbolo; los polígonos siguen visibles.
+  }
+}
+
+function markerLayout(image: unknown) {
+  return {
+    "icon-image": image as never,
+    "icon-allow-overlap": true,
+    "icon-ignore-placement": true,
+  };
+}
 
 interface Props {
   active: Record<LayerId, boolean>;
   zones: GeoJSON.FeatureCollection;
   anomalies: GeoJSON.FeatureCollection;
+  anomalyPoints: GeoJSON.FeatureCollection;
   alerts: GeoJSON.FeatureCollection;
+  alertPoints: GeoJSON.FeatureCollection;
   reports: GeoJSON.FeatureCollection;
   hotspots: HotspotCollection | undefined;
   selectedGeometry: GeoJSON.Geometry | null;
@@ -122,7 +148,7 @@ export default function MapView(props: Props) {
       callbacks.current.onBboxChange([west, south, east, north]);
     };
 
-    map.on("load", () => {
+    map.on("load", async () => {
       const zoneFill = readToken("--map-zone-fill");
       const zoneLine = readToken("--map-zone-line");
       const fire = readToken("--map-anomaly-fire");
@@ -137,7 +163,16 @@ export default function MapView(props: Props) {
       ];
       const confidenceOpacity = ["interpolate", ["linear"], ["get", "confidence"], 0, 0.25, 1, 0.7];
 
-      for (const id of ["zones", "alerts", "anomalies", "reports", "selection"]) {
+      const risk = (level: string) => readToken(`--risk-${level.toLowerCase()}`);
+      await Promise.all([
+        addMarker(map, "anomaly-INCENDIO", "marcador-anomalia", fire),
+        addMarker(map, "anomaly-DEFORESTACION", "marcador-anomalia", deforestation),
+        ...RISK_LEVELS.map((level) => addMarker(map, `alert-${level}`, "marcador-alerta", risk(level))),
+        addMarker(map, "report", "marcador-reporte", readToken("--map-report")),
+      ]);
+      if (mapRef.current !== map) return; // desmontado mientras cargaban los marcadores
+
+      for (const id of ["zones", "alerts", "anomalies", "alert-points", "anomaly-points", "reports", "selection"]) {
         map.addSource(id, { type: "geojson", data: EMPTY_COLLECTION });
       }
       map.addLayer({
@@ -181,21 +216,33 @@ export default function MapView(props: Props) {
         paint: { "line-color": typeColor as never, "line-width": 2 },
       });
       map.addLayer({
-        id: "reports-circle",
-        type: "circle",
-        source: "reports",
-        paint: {
-          "circle-radius": 6,
-          "circle-color": readToken("--map-report"),
-          "circle-stroke-color": readToken("--color-bg"),
-          "circle-stroke-width": 2,
-        },
-      });
-      map.addLayer({
         id: "selection-line",
         type: "line",
         source: "selection",
         paint: { "line-color": readToken("--map-selection"), "line-width": 4 },
+      });
+      map.addLayer({
+        id: "reports-marker",
+        type: "symbol",
+        source: "reports",
+        layout: markerLayout("report"),
+      });
+      map.addLayer({
+        id: "anomalies-marker",
+        type: "symbol",
+        source: "anomaly-points",
+        layout: markerLayout(["concat", "anomaly-", ["get", "type"]]),
+      });
+      map.addLayer({
+        id: "alerts-marker",
+        type: "symbol",
+        source: "alert-points",
+        // La alerta comparte centro con su anomalía: su marcador flota encima, como un banderín.
+        layout: {
+          ...markerLayout(["concat", "alert-", ["get", "risk_level"]]),
+          "icon-anchor": "bottom",
+          "icon-offset": [0, -12],
+        },
       });
 
       const overlay = new MapboxOverlay({ interleaved: false, layers: [] });
@@ -229,7 +276,8 @@ export default function MapView(props: Props) {
     };
   }, []);
 
-  const { zones, anomalies, alerts, reports, hotspots, active, selectedGeometry, focusBbox } = props;
+  const { zones, anomalies, anomalyPoints, alerts, alertPoints, reports, hotspots, active } = props;
+  const { selectedGeometry, focusBbox } = props;
 
   useEffect(() => {
     const map = mapRef.current;
@@ -237,8 +285,10 @@ export default function MapView(props: Props) {
     setSourceData(map, "zones", zones);
     setSourceData(map, "anomalies", anomalies);
     setSourceData(map, "alerts", alerts);
+    setSourceData(map, "anomaly-points", anomalyPoints);
+    setSourceData(map, "alert-points", alertPoints);
     setSourceData(map, "reports", reports);
-  }, [ready, zones, anomalies, alerts, reports]);
+  }, [ready, zones, anomalies, anomalyPoints, alerts, alertPoints, reports]);
 
   useEffect(() => {
     const map = mapRef.current;

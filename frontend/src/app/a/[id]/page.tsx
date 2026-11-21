@@ -5,6 +5,7 @@ import { getPublicAlert } from "@/features/alerts/api/public-alert";
 import { PublicAlertSheet } from "@/features/alerts/components/PublicAlertSheet";
 import { ANOMALY_TYPE_LABELS, formatDate, formatNumber } from "@/features/map/labels";
 import type { AnomalyType } from "@/shared/api/types";
+import { Logo } from "@/shared/ui/icons/Icon";
 
 // Pública y renderizada en servidor con datos frescos (sin caché ni guardas de sesión).
 export const dynamic = "force-dynamic";
@@ -36,7 +37,10 @@ export default async function PublicAlertPage({ params }: Props) {
   if (result.kind === "error") {
     return (
       <main className="auth-page">
-        <p className="wordmark">Vigía</p>
+        <p className="wordmark">
+          <Logo size={32} />
+          <span>Vigía</span>
+        </p>
         <h1>No pudimos cargar la alerta</h1>
         <p className="lede">El servicio no respondió. Recarga la página en unos minutos.</p>
         <p>

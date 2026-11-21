@@ -8,9 +8,9 @@ import { useAnomalies, useHotspots, useZones } from "@/features/monitoring/api/q
 import { NotificationToasts } from "@/features/notifications/components/NotificationToasts";
 import { useReports } from "@/features/reports/api/queries";
 import { geometryBbox, type Bbox } from "@/shared/geo";
-import { toMapCollection, zonesToCollection } from "../geojson";
+import { toMapCollection, toPointCollection, zonesToCollection } from "../geojson";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { ANOMALY_TYPE_LABELS, formatNumber, percent } from "../labels";
+import { ANOMALY_TYPE_LABELS, anomalyIcon, formatNumber, percent } from "../labels";
 import {
   fromAlert,
   fromAnomaly,
@@ -22,13 +22,14 @@ import { DetailPanel } from "./DetailPanel";
 import { EventList, type EventItem } from "./EventList";
 import { ImpactCard } from "./ImpactCard";
 import { LayerPanel, type LayerId, type LayerOption } from "./LayerPanel";
+import { Skeleton } from "@/shared/ui/states";
 
 const MapView = dynamic(() => import("./MapView"), {
   ssr: false,
   loading: () => (
-    <p role="status" className="map-status">
-      Cargando mapa…
-    </p>
+    <div className="map-loading">
+      <Skeleton label="Cargando mapa…" variant="block" />
+    </div>
   ),
 });
 
@@ -67,11 +68,17 @@ export function CommandCenter() {
 
   const layerOptions = useMemo<LayerOption[]>(
     () => [
-      { id: "zones", label: "Zonas monitoreadas" },
-      { id: "anomalies", label: "Anomalías" },
-      { id: "hotspots", label: "Focos de calor (FIRMS)" },
-      ...(alertsEnabled ? [{ id: "alerts", label: "Alertas" } as const] : []),
-      { id: "reports", label: isCitizen ? "Mis reportes" : "Reportes ciudadanos" },
+      { id: "zones", label: "Zonas monitoreadas", icon: "geocerca" },
+      { id: "anomalies", label: "Anomalías", icon: "marcador-anomalia" },
+      { id: "hotspots", label: "Focos de calor (FIRMS)", icon: "foco" },
+      ...(alertsEnabled
+        ? [{ id: "alerts", label: "Alertas", icon: "marcador-alerta" } as const]
+        : []),
+      {
+        id: "reports",
+        label: isCitizen ? "Mis reportes" : "Reportes ciudadanos",
+        icon: "marcador-reporte",
+      },
     ],
     [alertsEnabled, isCitizen],
   );
@@ -83,6 +90,14 @@ export function CommandCenter() {
   );
   const alertCollection = useMemo(
     () => toMapCollection(alerts.data?.features ?? []),
+    [alerts.data],
+  );
+  const anomalyPoints = useMemo(
+    () => toPointCollection(anomalies.data?.features ?? []),
+    [anomalies.data],
+  );
+  const alertPoints = useMemo(
+    () => toPointCollection(alerts.data?.features ?? []),
     [alerts.data],
   );
   const reportCollection = useMemo(
@@ -112,6 +127,7 @@ export function CommandCenter() {
         items.push({
           kind: "anomaly",
           id: f.id,
+          icon: anomalyIcon(f.properties.type),
           label: `${ANOMALY_TYPE_LABELS[f.properties.type]} · ${zone} · ${percent(f.properties.confidence)}`,
         });
       }
@@ -121,6 +137,7 @@ export function CommandCenter() {
         items.push({
           kind: "alert",
           id: f.id,
+          icon: "geocerca",
           label: `Alerta ${f.properties.risk_level.toLowerCase()} · ${f.properties.zone_name}`,
         });
       }
@@ -202,7 +219,9 @@ export function CommandCenter() {
           active={active}
           zones={zoneCollection}
           anomalies={anomalyCollection}
+          anomalyPoints={anomalyPoints}
           alerts={alertCollection}
+          alertPoints={alertPoints}
           reports={reportCollection}
           hotspots={hotspots.data}
           selectedGeometry={current?.geometry ?? null}

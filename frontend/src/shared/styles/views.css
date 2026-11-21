@@ -396,3 +396,172 @@ input[type="file"]::file-selector-button:hover {
     flex: 1;
   }
 }
+
+/* --- Iconos (ver vigia-ui: Phosphor light para interfaz, <Icon> propio para el dominio) --- */
+.icon {
+  flex: none;
+  vertical-align: middle;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-stretch: var(--width-display);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.wordmark .logo {
+  color: var(--color-accent);
+}
+
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.title-with-icon .icon {
+  color: var(--color-text-muted);
+}
+
+.label-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.icon-button {
+  min-width: var(--touch-target);
+  padding: var(--space-2);
+}
+
+.app-nav a {
+  gap: var(--space-2);
+}
+
+.layer-option .icon,
+.panel li button .icon {
+  color: var(--color-text-muted);
+}
+
+.panel li button {
+  justify-content: flex-start;
+}
+
+.entry-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+a.button {
+  gap: var(--space-2);
+}
+
+.risk-glyph rect {
+  stroke-width: 1.2;
+}
+
+/* --- Estados: carga, vacío y error --- */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.skeleton-bar {
+  display: block;
+  height: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-text .skeleton-bar:nth-child(3n + 2) {
+  width: 92%;
+}
+
+.skeleton-text .skeleton-bar:nth-child(3n + 3) {
+  width: 64%;
+}
+
+.skeleton-list .skeleton-bar {
+  height: var(--space-7);
+}
+
+.skeleton-block .skeleton-bar {
+  height: 10rem;
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.map-loading {
+  position: absolute;
+  inset: 0;
+  padding: var(--space-4);
+}
+
+.map-loading .skeleton,
+.map-loading .skeleton-bar {
+  height: 100%;
+  margin: 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  color: var(--color-text-muted);
+}
+
+.illustration {
+  width: 7.5rem;
+  height: auto;
+  color: var(--color-border-control);
+}
+
+.illustration .icon {
+  color: var(--color-accent);
+}
+
+.empty-title {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-stretch: var(--width-display);
+  font-weight: 700;
+}
+
+.empty-body p {
+  margin: 0;
+  max-width: var(--measure);
+}
+
+.error-state {
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: var(--rail-edge-width) solid var(--risk-critico);
+  background: var(--color-surface-raised);
+}
+
+.error-state p {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.error-state .actions {
+  margin-bottom: 0;
+}

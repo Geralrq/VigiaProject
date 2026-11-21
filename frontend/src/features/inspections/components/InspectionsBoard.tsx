@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useMe } from "@/features/auth/api/useMe";
 import { RiskBadge } from "@/features/map/components/RiskBadge";
-import { ANOMALY_TYPE_LABELS, formatDate, formatNumber } from "@/features/map/labels";
+import { ANOMALY_TYPE_LABELS, anomalyIcon, formatDate, formatNumber } from "@/features/map/labels";
 import type { AnomalyType, Inspection } from "@/shared/api/types";
 import { INSPECTION_STATES, useInspections } from "../api/queries";
 import { STATE_LABELS, asRiskLevel } from "../labels";
+import { EmptyState, ErrorState, Skeleton } from "@/shared/ui/states";
+import { Icon } from "@/shared/ui/icons/Icon";
 
 function Entry({ inspection }: { inspection: Inspection }) {
   const risk = asRiskLevel(inspection.nivel_riesgo);
@@ -14,7 +16,10 @@ function Entry({ inspection }: { inspection: Inspection }) {
   return (
     <li>
       <Link href={`/inspecciones/${inspection.id}`}>
-        <span className="entry-title">{inspection.zona}</span>
+        <span className="entry-title">
+          <Icon name={anomalyIcon(inspection.tipo_anomalia)} size={18} />
+          {inspection.zona}
+        </span>
         <span className="entry-meta">
           {risk && <RiskBadge level={risk} />}
           <span className="muted">
@@ -35,26 +40,24 @@ export function InspectionsBoard() {
   const inspections = useInspections();
   const me = useMe();
 
-  if (inspections.isPending) return <p role="status">Cargando inspecciones…</p>;
+  if (inspections.isPending) return <Skeleton label="Cargando inspecciones…" variant="list" lines={4} />;
   if (inspections.isError) {
-    return (
-      <div role="alert">
-        <p className="error">{inspections.error.message}</p>
-        <button type="button" onClick={() => inspections.refetch()}>
-          Reintentar
-        </button>
-      </div>
-    );
+    return <ErrorState message={inspections.error.message} onRetry={() => inspections.refetch()} />;
   }
 
   const items = inspections.data;
   if (items.length === 0) {
     return (
-      <p>
-        {me.data?.role === "TECNICO"
-          ? "Todavía no tienes inspecciones asignadas."
-          : "Aún no hay inspecciones. Se crean solas cuando se emite una alerta."}
-      </p>
+      <EmptyState
+        icon="informe"
+        title={me.data?.role === "TECNICO" ? "No tienes inspecciones asignadas" : "Aún no hay inspecciones"}
+      >
+        <p>
+          {me.data?.role === "TECNICO"
+            ? "Cuando una autoridad te asigne un ticket, aparecerá aquí."
+            : "Se crean solas cuando se emite una alerta. Mientras tanto, revisa el centro de comando."}
+        </p>
+      </EmptyState>
     );
   }
 

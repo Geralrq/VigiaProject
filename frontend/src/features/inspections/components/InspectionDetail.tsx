@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { useMe } from "@/features/auth/api/useMe";
 import { RiskBadge } from "@/features/map/components/RiskBadge";
-import { ANOMALY_TYPE_LABELS, formatDate, formatNumber } from "@/features/map/labels";
+import { ANOMALY_TYPE_LABELS, anomalyIcon, formatDate, formatNumber } from "@/features/map/labels";
 import type { AnomalyType, Inspection, Profile } from "@/shared/api/types";
 import { useInspection } from "../api/queries";
 import { FORM_FIELD_LABELS, STATE_LABELS, asRiskLevel } from "../labels";
 import { AssignSection } from "./AssignSection";
 import { PdfButton } from "./PdfButton";
 import { TechnicianWorkspace } from "./TechnicianWorkspace";
+import { ErrorState, Skeleton } from "@/shared/ui/states";
+import { UiIcon } from "@/shared/ui/icons/ui";
+import { Icon } from "@/shared/ui/icons/Icon";
 
 function ReadOnlyForm({ inspection }: { inspection: Inspection }) {
   const form = inspection.formulario;
@@ -48,19 +51,13 @@ export function InspectionDetail({ id }: { id: string }) {
   const inspection = useInspection(id);
   const me = useMe();
 
-  if (inspection.isPending || me.isPending) return <p role="status">Cargando inspección…</p>;
+  if (inspection.isPending || me.isPending) return <Skeleton label="Cargando inspección…" lines={8} />;
   if (inspection.isError || me.isError) {
     const message = inspection.error?.message ?? me.error?.message ?? "No se pudo cargar.";
     return (
-      <div role="alert">
-        <p className="error">{message}</p>
-        <button type="button" onClick={() => inspection.refetch()}>
-          Reintentar
-        </button>
-        <p>
-          <Link href="/inspecciones">Volver al tablero</Link>
-        </p>
-      </div>
+      <ErrorState message={message} onRetry={() => inspection.refetch()}>
+        <Link href="/inspecciones">Volver al tablero</Link>
+      </ErrorState>
     );
   }
 
@@ -80,7 +77,10 @@ export function InspectionDetail({ id }: { id: string }) {
           Volver al tablero
         </Link>
       </p>
-      <h1 id="inspection-title">{data.zona}</h1>
+      <h1 id="inspection-title" className="title-with-icon">
+        <Icon name={anomalyIcon(data.tipo_anomalia)} size={28} />
+        {data.zona}
+      </h1>
       <dl className="facts">
         <dt>Estado</dt>
         <dd>{STATE_LABELS[data.estado]}</dd>
@@ -123,7 +123,7 @@ export function InspectionDetail({ id }: { id: string }) {
 
       <div className="actions">
         <a className="button" href={data.ruta_google_maps} target="_blank" rel="noopener noreferrer">
-          Abrir ruta en Google Maps
+          <UiIcon name="ubicacion" size={18} /> Abrir ruta en Google Maps
         </a>
         {(isStaff || isAssignedTechnician) && <PdfButton inspectionId={data.id} />}
       </div>

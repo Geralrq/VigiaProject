@@ -2,6 +2,7 @@
 
 import { useScanNow } from "@/features/monitoring/api/queries";
 import { formatDate } from "../labels";
+import { Icon } from "@/shared/ui/icons/Icon";
 
 /** Solo se monta para ADMIN. El backend vuelve a exigir el rol. */
 export function AdminScan() {
@@ -18,7 +19,8 @@ export function AdminScan() {
         disabled={scan.isPending}
         aria-busy={scan.isPending}
       >
-        {scan.isPending ? "Escaneando zonas…" : "Escanear ahora"}
+        <Icon name="satelite" size={18} />
+        <span>{scan.isPending ? "Escaneando zonas…" : "Escanear ahora"}</span>
       </button>
       <div role="status">
         {summary && (

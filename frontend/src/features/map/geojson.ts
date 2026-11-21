@@ -1,4 +1,5 @@
 import type { Zone } from "@/shared/api/types";
+import { geometryCenter } from "@/shared/geo";
 
 type Geometry = GeoJSON.Geometry;
 
@@ -18,6 +19,21 @@ export function toMapCollection(features: readonly FeatureLike[]): GeoJSON.Featu
       properties: { ...f.properties, featureId: f.id },
     })),
   };
+}
+
+/** Un punto por feature (centro de su geometría) para los marcadores con icono. */
+export function toPointCollection(features: readonly FeatureLike[]): GeoJSON.FeatureCollection {
+  const points: GeoJSON.Feature[] = [];
+  for (const f of features) {
+    const center = geometryCenter(f.geometry);
+    if (!center) continue;
+    points.push({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [center.lng, center.lat] },
+      properties: { ...f.properties, featureId: f.id },
+    });
+  }
+  return { type: "FeatureCollection", features: points };
 }
 
 export function zonesToCollection(zones: readonly Zone[]): GeoJSON.FeatureCollection {

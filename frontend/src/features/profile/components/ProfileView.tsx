@@ -8,6 +8,7 @@ import { ROLE_LABELS } from "@/shared/auth/access";
 import { useGeolocation } from "@/shared/hooks/useGeolocation";
 import { TextField } from "@/shared/ui/fields";
 import { useSetTelegramChat, useTelegramLink, useUpdateProfile } from "../api/queries";
+import { ErrorState, Skeleton } from "@/shared/ui/states";
 
 // El campo de chat_id manual solo existe en demo (el backend también lo rechaza en live).
 const DEMO_MODE = process.env.NEXT_PUBLIC_APP_MODE === "demo";
@@ -203,16 +204,9 @@ function TelegramSection({ linked, onRefresh }: { linked: boolean; onRefresh: ()
 export function ProfileView() {
   const me = useMe();
 
-  if (me.isPending) return <p role="status">Cargando tu perfil…</p>;
+  if (me.isPending) return <Skeleton label="Cargando tu perfil…" lines={5} />;
   if (me.isError) {
-    return (
-      <div role="alert">
-        <p className="error">{me.error.message}</p>
-        <button type="button" onClick={() => me.refetch()}>
-          Reintentar
-        </button>
-      </div>
-    );
+    return <ErrorState message={me.error.message} onRetry={() => me.refetch()} />;
   }
 
   const profile = me.data;

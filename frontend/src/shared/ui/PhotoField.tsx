@@ -2,6 +2,7 @@
 
 import { useId, type ChangeEvent } from "react";
 import type { usePhotoPicker } from "@/shared/hooks/usePhotoPicker";
+import { UiIcon } from "./icons/ui";
 
 type Picker = ReturnType<typeof usePhotoPicker>;
 
@@ -28,7 +29,9 @@ export function PhotoField({ label, picker, hint, previewAlt }: Props) {
 
   return (
     <div className="form-field">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id} className="label-with-icon">
+        <UiIcon name="camara" size={18} /> {label}
+      </label>
       <input
         id={id}
         type="file"

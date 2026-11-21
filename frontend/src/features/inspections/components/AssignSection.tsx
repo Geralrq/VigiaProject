@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import type { Inspection } from "@/shared/api/types";
 import { SelectField } from "@/shared/ui/fields";
 import { useAssignInspection, useTechnicians } from "../api/queries";
+import { ErrorState, Skeleton } from "@/shared/ui/states";
 
 /** AUTORIDAD y ADMIN: asigna (o reasigna) el ticket a un técnico. */
 export function AssignSection({ inspection }: { inspection: Inspection }) {
@@ -24,11 +25,9 @@ export function AssignSection({ inspection }: { inspection: Inspection }) {
   return (
     <section aria-labelledby="assign-title">
       <h2 id="assign-title">Asignación</h2>
-      {technicians.isPending && <p role="status">Cargando técnicos…</p>}
+      {technicians.isPending && <Skeleton label="Cargando técnicos…" lines={2} />}
       {technicians.isError && (
-        <p role="alert" className="error">
-          {technicians.error.message}
-        </p>
+        <ErrorState message={technicians.error.message} onRetry={() => technicians.refetch()} />
       )}
       {technicians.data && technicians.data.length === 0 && (
         <p>No hay técnicos registrados para asignar.</p>

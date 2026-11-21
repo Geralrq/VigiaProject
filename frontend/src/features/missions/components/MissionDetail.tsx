@@ -4,12 +4,15 @@ import Link from "next/link";
 import {
   ANOMALY_STATE_LABELS,
   ANOMALY_TYPE_LABELS,
+  anomalyIcon,
   formatDate,
   formatNumber,
 } from "@/features/map/labels";
 import type { AnomalyType, Mission, MissionAnswerResult } from "@/shared/api/types";
 import { geometryCenter, googleMapsUrl } from "@/shared/geo";
 import { MissionAnswerForm } from "./MissionAnswerForm";
+import { UiIcon } from "@/shared/ui/icons/ui";
+import { Icon } from "@/shared/ui/icons/Icon";
 
 const ANSWER_LABELS = { CONFIRMA: "Confirmaste el problema", DESCARTA: "Lo descartaste" } as const;
 
@@ -30,7 +33,8 @@ export function MissionDetail({ mission, result, onAnswered }: Props) {
           Volver a la lista
         </Link>
       </p>
-      <h2 id="mission-title">
+      <h2 id="mission-title" className="title-with-icon">
+        <Icon name={anomalyIcon(mission.anomaly_type)} size={24} />
         {typeLabel} en {mission.zone_name}
       </h2>
 
@@ -65,7 +69,7 @@ export function MissionDetail({ mission, result, onAnswered }: Props) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Abrir en Google Maps
+            <UiIcon name="ubicacion" size={18} /> Abrir en Google Maps
           </a>
         </p>
       )}

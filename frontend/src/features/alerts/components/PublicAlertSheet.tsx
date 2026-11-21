@@ -1,15 +1,22 @@
 import Link from "next/link";
 import { RiskBadge } from "@/features/map/components/RiskBadge";
-import { ANOMALY_TYPE_LABELS, formatDate, formatNumber } from "@/features/map/labels";
+import { ANOMALY_TYPE_LABELS, anomalyIcon, formatDate, formatNumber } from "@/features/map/labels";
 import type { AnomalyType, PublicAlert } from "@/shared/api/types";
+import { Icon, Logo } from "@/shared/ui/icons/Icon";
 
 /** Ficha pública de una alerta. Componente de servidor: solo datos reducidos, sin ubicación. */
 export function PublicAlertSheet({ alert }: { alert: PublicAlert }) {
   const typeLabel = ANOMALY_TYPE_LABELS[alert.type as AnomalyType] ?? alert.type;
   return (
     <main className="auth-page public-sheet">
-      <p className="wordmark">Vigía</p>
-      <h1>Alerta de {typeLabel.toLowerCase()}</h1>
+      <p className="wordmark">
+          <Logo size={32} />
+          <span>Vigía</span>
+        </p>
+      <h1 className="title-with-icon">
+        <Icon name={anomalyIcon(alert.type)} size={30} />
+        Alerta de {typeLabel.toLowerCase()}
+      </h1>
       <p className="lede">
         Zona {alert.zone_name}. Ficha pública con datos resumidos de una alerta ambiental.
       </p>

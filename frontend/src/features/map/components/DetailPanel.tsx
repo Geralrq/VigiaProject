@@ -8,12 +8,21 @@ import {
 } from "@/features/monitoring/api/queries";
 import type { Role } from "@/shared/api/types";
 import { ConfirmDialog } from "@/shared/ui/ConfirmDialog";
-import { ANOMALY_STATE_LABELS, ANOMALY_TYPE_LABELS, formatDate, percent } from "../labels";
+import {
+  ANOMALY_STATE_LABELS,
+  ANOMALY_TYPE_LABELS,
+  anomalyIcon,
+  formatDate,
+  percent,
+} from "../labels";
 import type { DetailModel } from "../selection";
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
 import { ImpactCard } from "./ImpactCard";
 import { NdviChart } from "./NdviChart";
 import { RiskBadge } from "./RiskBadge";
+import { UiIcon } from "@/shared/ui/icons/ui";
+import { Icon } from "@/shared/ui/icons/Icon";
+import { ErrorState, Skeleton } from "@/shared/ui/states";
 
 interface Props {
   detail: DetailModel;
@@ -37,11 +46,12 @@ export function DetailPanel({ detail, role, onClose }: Props) {
       data-risk={detail.risk ?? undefined}
     >
       <header>
-        <h2 id="detail-title">
+        <h2 id="detail-title" className="title-with-icon">
+          <Icon name={anomalyIcon(detail.type)} size={24} />
           {detail.kind === "alert" ? "Alerta" : "Anomalía"} de {ANOMALY_TYPE_LABELS[detail.type].toLowerCase()}
         </h2>
-        <button type="button" onClick={onClose}>
-          Cerrar detalle
+        <button type="button" className="icon-button" onClick={onClose} aria-label="Cerrar detalle">
+          <UiIcon name="cerrar" />
         </button>
       </header>
 
@@ -84,12 +94,10 @@ export function DetailPanel({ detail, role, onClose }: Props) {
       <section aria-label="Imágenes antes y después">
         <h3>Antes / después</h3>
         {images.isError ? (
-          <div role="alert">
-            <p className="error">No se pudieron cargar las imágenes.</p>
-            <button type="button" onClick={() => images.refetch()}>
-              Reintentar
-            </button>
-          </div>
+          <ErrorState
+            message="No se pudieron cargar las imágenes satelitales."
+            onRetry={() => images.refetch()}
+          />
         ) : (
           <BeforeAfterSlider
             beforeUrl={images.data?.before_url ?? null}
@@ -104,11 +112,9 @@ export function DetailPanel({ detail, role, onClose }: Props) {
 
       <section aria-label="Serie NDVI de la zona">
         <h3>NDVI de la zona</h3>
-        {readings.isPending && <p role="status">Cargando serie…</p>}
+        {readings.isPending && <Skeleton label="Cargando la serie NDVI…" variant="block" />}
         {readings.isError && (
-          <p role="alert" className="error">
-            No se pudo cargar la serie.
-          </p>
+          <ErrorState message="No se pudo cargar la serie NDVI." onRetry={() => readings.refetch()} />
         )}
         {readings.data && <NdviChart data={readings.data} />}
       </section>

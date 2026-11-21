@@ -479,7 +479,7 @@ a.button {
   height: var(--space-3);
   border-radius: var(--radius);
   background: var(--color-surface-raised);
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  animation: skeleton-pulse var(--motion-loop) var(--ease-in-out) infinite;
 }
 
 .skeleton-text .skeleton-bar:nth-child(3n + 2) {

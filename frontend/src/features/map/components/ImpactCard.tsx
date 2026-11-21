@@ -1,3 +1,4 @@
+import { CountUp } from "@/shared/ui/CountUp";
 import { formatNumber } from "../labels";
 
 interface Props {
@@ -6,7 +7,7 @@ interface Props {
   co2Tonnes: number | null;
 }
 
-/** Impacto en cifras de instrumento. Sin caja: la jerarquía la da la tipografía. */
+/** Impacto en cifras de instrumento, con conteo animado al aparecer o cambiar. */
 export function ImpactCard({ title, hectares, co2Tonnes }: Props) {
   return (
     <section aria-label={title}>
@@ -15,7 +16,9 @@ export function ImpactCard({ title, hectares, co2Tonnes }: Props) {
         <div className="impact-row">
           <dt className="visually-hidden">Superficie afectada</dt>
           <dd>
-            <span className="impact-figure">{formatNumber(hectares)}</span>
+            <span className="impact-figure">
+              <CountUp value={hectares} format={formatNumber} />
+            </span>
             <span className="muted"> hectáreas</span>
           </dd>
         </div>
@@ -23,7 +26,7 @@ export function ImpactCard({ title, hectares, co2Tonnes }: Props) {
           <dt className="visually-hidden">Carbono liberado, estimación</dt>
           <dd>
             <span className="impact-figure">
-              {co2Tonnes === null ? "sin dato" : formatNumber(co2Tonnes)}
+              {co2Tonnes === null ? "sin dato" : <CountUp value={co2Tonnes} format={formatNumber} />}
             </span>
             <span className="muted"> t de CO₂ (estimación)</span>
           </dd>

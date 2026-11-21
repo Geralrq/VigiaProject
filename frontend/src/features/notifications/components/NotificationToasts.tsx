@@ -1,9 +1,13 @@
 "use client";
 
-import { useNotificationFeed } from "../hooks/useNotificationFeed";
 import { UiIcon } from "@/shared/ui/icons/ui";
+import { useNotificationFeed } from "../hooks/useNotificationFeed";
 
-/** Avisos de nuevas notificaciones (Realtime). La región anuncia los cambios a lectores de pantalla. */
+/**
+ * Avisos de nuevas notificaciones (Realtime). La barra de tiempo los cierra solos a los 10 s;
+ * se pausa al pasar el ratón o al enfocar el aviso, y con movimiento reducido no hay cierre
+ * automático (el aviso queda hasta que se cierra a mano).
+ */
 export function NotificationToasts() {
   const { items, dismiss } = useNotificationFeed();
   return (
@@ -21,6 +25,11 @@ export function NotificationToasts() {
           >
             <UiIcon name="cerrar" />
           </button>
+          <span
+            className="toast-timer"
+            aria-hidden="true"
+            onAnimationEnd={() => dismiss(item.id)}
+          />
         </div>
       ))}
     </div>

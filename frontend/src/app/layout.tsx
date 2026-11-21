@@ -5,6 +5,7 @@ import { Providers } from "@/shared/providers";
 import "@/shared/styles/tokens.css";
 import "@/shared/styles/base.css";
 import "@/shared/styles/views.css";
+import "@/shared/styles/motion.css";
 
 // Archivo con eje de ancho (títulos semi-expandidos); Plex Mono solo para instrumentos.
 const archivo = Archivo({

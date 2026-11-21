@@ -12,14 +12,18 @@ export function AuthPage({
   children: ReactNode;
 }) {
   return (
-    <main className="auth-page">
-      <p className="wordmark">
-        <Logo size={32} />
-        <span>Vigía</span>
-      </p>
-      <h1>{title}</h1>
-      {lede && <p className="lede">{lede}</p>}
-      {children}
-    </main>
+    <div className="auth-screen">
+      {/* Cuadrícula cartográfica de fondo: decorativa, se desplaza muy despacio. */}
+      <div className="carto-grid" aria-hidden="true" />
+      <main className="auth-page">
+        <p className="wordmark">
+          <Logo size={32} />
+          <span>Vigía</span>
+        </p>
+        <h1>{title}</h1>
+        {lede && <p className="lede">{lede}</p>}
+        {children}
+      </main>
+    </div>
   );
 }

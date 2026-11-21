@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import type { HotspotCollection } from "@/shared/api/types";
 import type { Bbox } from "@/shared/geo";
 import { readNumberToken, readRgbToken, readToken } from "@/shared/styles/tokens";
+import { prefersReducedMotion, useReducedMotion } from "@/shared/ui/motion";
 import { EMPTY_COLLECTION } from "../geojson";
 import { markerSvg, type IconName } from "@/shared/ui/icons/paths";
 import type { Selection } from "../selection";
@@ -66,7 +67,7 @@ const COLOMBIA_ZOOM = 5;
 const LAYER_IDS: Record<Exclude<LayerId, "hotspots">, string[]> = {
   zones: ["zones-fill", "zones-line"],
   anomalies: ["anomalies-fill", "anomalies-line", "anomalies-marker"],
-  alerts: ["alerts-fill", "alerts-line", "alerts-marker"],
+  alerts: ["alerts-fill", "alerts-line", "alerts-pulse", "alerts-marker"],
   reports: ["reports-marker"],
 };
 
@@ -89,6 +90,21 @@ async function addMarker(map: MapLibreMap, id: string, icon: IconName, color: st
     // Sin el marcador la capa no dibuja ese símbolo; los polígonos siguen visibles.
   }
 }
+
+// Pulso de las alertas: más rápido y más amplio cuanto mayor el riesgo.
+const PULSE_PERIOD_MS: Record<(typeof RISK_LEVELS)[number], number> = {
+  BAJO: 3200,
+  MEDIO: 2400,
+  ALTO: 1700,
+  CRITICO: 1100,
+};
+const PULSE_SPREAD_PX: Record<(typeof RISK_LEVELS)[number], number> = {
+  BAJO: 10,
+  MEDIO: 14,
+  ALTO: 19,
+  CRITICO: 25,
+};
+const PULSE_FRAME_MS = 33; // ~30 fps: suficiente para un halo y barato para la batería
 
 function markerLayout(image: unknown) {
   return {
@@ -122,6 +138,7 @@ export default function MapView(props: Props) {
   const mapRef = useRef<MapLibreMap | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const [ready, setReady] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   // Los manejadores de eventos del mapa siempre llaman a la última versión de los callbacks.
   const callbacks = useRef({ onBboxChange: props.onBboxChange, onSelect: props.onSelect });
@@ -138,6 +155,7 @@ export default function MapView(props: Props) {
       style: baseStyle(),
       center: COLOMBIA_CENTER,
       zoom: COLOMBIA_ZOOM,
+      attributionControl: { compact: false },
     });
     mapRef.current = map;
     map.addControl(new NavigationControl({ showCompass: false }), "top-right");
@@ -220,6 +238,17 @@ export default function MapView(props: Props) {
         type: "line",
         source: "selection",
         paint: { "line-color": readToken("--map-selection"), "line-width": 4 },
+      });
+      map.addLayer({
+        id: "alerts-pulse",
+        type: "circle",
+        source: "alert-points",
+        paint: {
+          "circle-color": riskColor as never,
+          "circle-radius": 10,
+          "circle-opacity": 0.22, // halo estático si no hay animación (movimiento reducido)
+          "circle-pitch-alignment": "map",
+        },
       });
       map.addLayer({
         id: "reports-marker",
@@ -315,14 +344,43 @@ export default function MapView(props: Props) {
     const map = mapRef.current;
     if (!ready || !map || !focusBbox) return;
     const [west, south, east, north] = focusBbox;
-    map.fitBounds(
+    const camera = map.cameraForBounds(
       [
         [west, south],
         [east, north],
       ],
       { padding: 48, maxZoom: 12 },
     );
+    if (!camera) return;
+    // Vuela a la selección; con movimiento reducido salta sin animación.
+    if (prefersReducedMotion()) map.jumpTo(camera);
+    else map.flyTo({ ...camera, duration: 1400, curve: 1.3 });
   }, [ready, focusBbox]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !active.alerts || reducedMotion) return;
+    let frame = 0;
+    let last = 0;
+    const tick = (now: number) => {
+      frame = requestAnimationFrame(tick);
+      if (now - last < PULSE_FRAME_MS) return;
+      last = now;
+      const radius: unknown[] = ["match", ["get", "risk_level"]];
+      const opacity: unknown[] = ["match", ["get", "risk_level"]];
+      for (const level of RISK_LEVELS) {
+        const phase = (now % PULSE_PERIOD_MS[level]) / PULSE_PERIOD_MS[level];
+        radius.push(level, 7 + PULSE_SPREAD_PX[level] * phase);
+        opacity.push(level, 0.5 * (1 - phase));
+      }
+      radius.push(0);
+      opacity.push(0);
+      map.setPaintProperty("alerts-pulse", "circle-radius", radius as never);
+      map.setPaintProperty("alerts-pulse", "circle-opacity", opacity as never);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [ready, active.alerts, reducedMotion]);
 
   // Focos de calor FIRMS: heatmap de deck.gl montado sobre MapLibre.
   useEffect(() => {

@@ -97,3 +97,11 @@
 - Pública `/a/[id]`: servidor, Open Graph, 404 propio; `API_INTERNAL_URL` (por defecto localhost:8000). `/mapa`: «Confirmar anomalía» pide confirmación en `<dialog>` modal. `manifest.webmanifest` + iconos generados en `public/icons`.
 - Variables nuevas en `frontend/.env.local` (ver `.env.example`): `NEXT_PUBLIC_APP_MODE`, `API_INTERNAL_URL` (opcional).
 - Verificado: lint, tsc y build (15 rutas); páginas públicas con la API real (incl. alerta real); vistas privadas revisadas en pantalla con datos de prueba (no con sesión real). Pendiente: probar signUp/recuperación contra Supabase real, subida real de fotos (Storage) y el flujo del técnico de punta a punta.
+
+## Pulido visual (dirección A) — 2 commits
+- Iconos: familia propia `<Icon>` (trazo 1,5; `shared/ui/icons/paths.ts` es la única fuente de los dibujos: también genera los marcadores de MapLibre, el favicon `app/icon.svg` y los PNG del manifest) + Phosphor `light` por icono (`<UiIcon>`). `RiskBadge` con glifo SVG. Logotipo: ojo sobre el horizonte.
+- Estados: `Skeleton`, `EmptyState` (ilustración + acción) y `ErrorState` (reintento) en todas las vistas.
+- Movimiento (CSS y APIs del navegador, todo con prefers-reduced-motion): `flyTo` a la selección, pulso de alertas por riesgo, listas escalonadas, `withViewTransition` en selección/pestañas, `CountUp` en cifras, radar al escanear, barra de tiempo en avisos, tirador del antes/después con pista, cuadrícula animada en /login, micro-interacciones. Tokens `--motion-*`.
+- Móvil: `/mapa` con `BottomSheet` (Capas, Detalle, Impacto; arrastre y teclado). URL: `?capas=…&sel=anomalia:<id>` (`features/map/url-state.ts`). Leyenda, escala y atribución visibles.
+- Bundle JS (gzip, `.next/static`): 823,1 → 846,6 KB (+23,5 KB; +19 KB en el commit 1 por Phosphor, que trae los 6 pesos por icono). Única dependencia nueva: `@phosphor-icons/react`.
+- Pendiente: probar el arrastre del panel en un celular real; el aviso de Realtime puede tapar contenido del panel inferior en móvil; `deck.gl` (paquete paraguas) ya no se importa y podría quitarse.

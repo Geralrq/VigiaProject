@@ -2,6 +2,7 @@ import type { Selection } from "../selection";
 import { EmptyState } from "@/shared/ui/states";
 import type { IconName } from "@/shared/ui/icons/paths";
 import { Icon } from "@/shared/ui/icons/Icon";
+import { stagger } from "@/shared/ui/motion";
 
 export interface EventItem extends Selection {
   label: string;
@@ -26,11 +27,11 @@ export function EventList({ items, selected, onSelect }: Props) {
           <p>No hay anomalías ni alertas en el área visible. Aleja el mapa o activa más capas.</p>
         </EmptyState>
       ) : (
-        <ul>
-          {items.slice(0, MAX_ITEMS).map((item) => {
+        <ul className="stagger">
+          {items.slice(0, MAX_ITEMS).map((item, index) => {
             const isSelected = selected?.kind === item.kind && selected.id === item.id;
             return (
-              <li key={`${item.kind}-${item.id}`}>
+              <li key={`${item.kind}-${item.id}`} style={stagger(index)}>
                 <button
                   type="button"
                   onClick={() => onSelect({ kind: item.kind, id: item.id })}

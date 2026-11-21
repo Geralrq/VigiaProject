@@ -90,7 +90,23 @@
   --z-overlay: 10;
   --z-toast: 100;
 
-  /* Movimiento: solo entrada del panel de detalle */
-  --motion-panel: 160ms;
+  /* Movimiento (todo se anula con prefers-reduced-motion; solo transform y opacity) */
+  --motion-fast: 120ms; /* hover, presionado, foco */
+  --motion-base: 220ms; /* apariciones, avisos, view transitions */
+  --motion-panel: 240ms; /* entrada del panel de detalle y del panel inferior */
+  --motion-ambient: 48s; /* deriva de la cuadrícula del login */
+  --motion-loop: 1.2s; /* esperas: radar, esqueletos */
+  --motion-hint: 1.6s; /* pista del deslizador (dos vaivenes) */
+  --stagger-step: 45ms; /* retardo entre filas de una lista */
+  --toast-duration: 10s; /* barra de tiempo de los avisos */
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
+
+  /* Panel inferior (móvil) y piezas del mapa */
+  --sheet-peek: 7.25rem;
+  --sheet-half: 50dvh;
+  --sheet-full: 88dvh;
+  --legend-width: 15rem;
+  --carto-grid-size: 48px;
+  --z-sheet: 20;
 }

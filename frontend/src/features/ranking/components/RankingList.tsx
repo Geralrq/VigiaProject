@@ -4,6 +4,7 @@ import { useMe } from "@/features/auth/api/useMe";
 import { formatNumber } from "@/features/map/labels";
 import { useLeaderboard } from "../api/queries";
 import { EmptyState, ErrorState, Skeleton } from "@/shared/ui/states";
+import { stagger } from "@/shared/ui/motion";
 
 export function RankingList() {
   const ranking = useLeaderboard();
@@ -26,9 +27,9 @@ export function RankingList() {
           <p>Responde una misión de verificación para abrir el ranking.</p>
         </EmptyState>
       ) : (
-        <ol className="ranking">
+        <ol className="ranking stagger">
           {ranking.data.map((entry, index) => (
-            <li key={`${index}-${entry.name}`}>
+            <li key={`${index}-${entry.name}`} style={stagger(index)}>
               <span className="ranking-name">{entry.name}</span>
               <span className="mono">{formatNumber(entry.points)}&nbsp;pts</span>
             </li>

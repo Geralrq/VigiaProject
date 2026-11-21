@@ -9,6 +9,7 @@ import { useMissions } from "../api/queries";
 import { MissionDetail } from "./MissionDetail";
 import { EmptyState, ErrorState, Skeleton } from "@/shared/ui/states";
 import { Icon } from "@/shared/ui/icons/Icon";
+import { stagger } from "@/shared/ui/motion";
 
 export function MissionsView() {
   const missions = useMissions();
@@ -48,11 +49,11 @@ export function MissionsView() {
             </p>
           </EmptyState>
         ) : (
-          <ul className="entry-list">
-            {items.map((mission) => {
+          <ul className="entry-list stagger">
+            {items.map((mission, index) => {
               const type = ANOMALY_TYPE_LABELS[mission.anomaly_type as AnomalyType] ?? mission.anomaly_type;
               return (
-                <li key={mission.id}>
+                <li key={mission.id} style={stagger(index)}>
                   <Link
                     href={`/misiones?m=${mission.id}`}
                     aria-current={mission.id === selectedId ? "true" : undefined}

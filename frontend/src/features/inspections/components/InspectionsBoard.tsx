@@ -9,12 +9,13 @@ import { INSPECTION_STATES, useInspections } from "../api/queries";
 import { STATE_LABELS, asRiskLevel } from "../labels";
 import { EmptyState, ErrorState, Skeleton } from "@/shared/ui/states";
 import { Icon } from "@/shared/ui/icons/Icon";
+import { stagger } from "@/shared/ui/motion";
 
-function Entry({ inspection }: { inspection: Inspection }) {
+function Entry({ inspection, index }: { inspection: Inspection; index: number }) {
   const risk = asRiskLevel(inspection.nivel_riesgo);
   const type = ANOMALY_TYPE_LABELS[inspection.tipo_anomalia as AnomalyType] ?? inspection.tipo_anomalia;
   return (
-    <li>
+    <li style={stagger(index)}>
       <Link href={`/inspecciones/${inspection.id}`}>
         <span className="entry-title">
           <Icon name={anomalyIcon(inspection.tipo_anomalia)} size={18} />
@@ -73,9 +74,9 @@ export function InspectionsBoard() {
             {column.length === 0 ? (
               <p className="muted">Ninguna.</p>
             ) : (
-              <ul className="entry-list">
-                {column.map((inspection) => (
-                  <Entry key={inspection.id} inspection={inspection} />
+              <ul className="entry-list stagger">
+                {column.map((inspection, index) => (
+                  <Entry key={inspection.id} inspection={inspection} index={index} />
                 ))}
               </ul>
             )}

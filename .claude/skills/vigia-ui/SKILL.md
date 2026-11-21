@@ -1,6 +1,6 @@
 ---
 name: vigia-ui
-description: Reglas de identidad visual de Vigía ("centro de comando ambiental", oscuro). Úsala SIEMPRE que se cree o cambie cualquier vista, componente, estilo, color, tipografía o mapa del frontend (frontend/src), también si el pedido parece solo funcional pero toca algo visible.
+description: Reglas de identidad visual de Vigía ("centro de comando ambiental", oscuro). Úsala SIEMPRE que se cree o cambie cualquier vista, componente, estilo, color, tipografía, icono, animación o mapa del frontend (frontend/src), también si el pedido parece solo funcional pero toca algo visible.
 ---
 
 # Vigía UI — «Centro de comando» (dirección A, toda la app)
@@ -8,43 +8,40 @@ description: Reglas de identidad visual de Vigía ("centro de comando ambiental"
 Sala de situación oscura, mapa protagonista. **El color solo significa riesgo.** Lo demás es verde-tinta y hielo neutro: si algo se ve naranja o rojo, es una alerta real.
 
 ## Tokens (única fuente: `src/shared/styles/tokens.css`)
-- Ningún `.css`/`.tsx` lleva colores, medidas ni fuentes literales: solo `var(--token)`. MapLibre/deck.gl leen tokens con `readToken()` (`shared/styles/tokens.ts`).
-- Superficies: `--color-bg` (lienzo) < `--color-surface` < `--color-surface-raised`. Texto `--color-text`; secundario `--color-text-muted`.
-- Hielo `--color-accent` = acción primaria, foco y selección (texto encima: `--color-on-accent`). Es el único acento.
-- Riesgo: `--risk-bajo|medio|alto|critico`; texto sobre relleno de riesgo `--risk-on-fill`. Todo AA (≥4,5:1 texto, ≥3:1 controles).
-- Bordes: `--color-border` solo decorativo (líneas de 1 px); controles interactivos usan `--color-border-control` (≥3:1).
-- Si falta un valor, **se añade el token** a tokens.css con su contraste verificado; no se escribe en el componente.
+- Ningún `.css`/`.tsx` lleva colores, medidas, fuentes ni duraciones literales: solo `var(--token)`. MapLibre/deck.gl leen tokens con `readToken()`. Excepción documentada: manifest y `themeColor` (no leen CSS).
+- Superficies `--color-bg` < `--color-surface` < `--color-surface-raised`; texto `--color-text` / `--color-text-muted`. Hielo `--color-accent` = acción primaria, foco y selección (único acento).
+- Riesgo `--risk-bajo|medio|alto|critico` (AA ≥4,5:1); bordes de control `--color-border-control` (≥3:1); `--color-border` solo decorativo.
+- Si falta un valor, **se añade el token** con su contraste verificado; nunca en el componente.
 
-## Riesgo nunca solo con color
-Usa `<RiskBadge level>` (features/map): glifo de 1–4 barras + etiqueta en texto (Bajo, Medio, Alto, Crítico). ALTO y CRÍTICO se parecen en color; el glifo y el texto los distinguen. Excepciones en el mapa, sin significar riesgo: incendio = naranja de fuego, deforestación = arena (suelo desnudo).
+## Iconos
+- Dominio (incendio, deforestación, inundación, satélite, foco, geocerca, misión, informe, marcadores): `<Icon name>` de `shared/ui/icons` (trazo 1,5, `currentColor`). Los trazados viven en `paths.ts` y son la única fuente: `markerSvg()` hace los marcadores de MapLibre y `logoSvg()` el favicon y los iconos del manifest.
+- Interfaz (cerrar, reintentar, descargar, menú…): `<UiIcon name>` = Phosphor `light`, importado **icono por icono** desde `@phosphor-icons/react/dist/csr/<Nombre>`; nunca el barril, Lucide ni Heroicons. Icono nuevo = añadirlo al mapa de `ui.tsx`.
+- Iconos decorativos con `aria-hidden`; botón solo-icono con `aria-label` y `.icon-button`. Nada de emojis.
+- Riesgo: `<RiskBadge level>` = `RiskGlyph` (1–4 barras) + texto. ALTO y CRÍTICO se distinguen por glifo y texto, no solo por color.
 
 ## Tipografía
-- Archivo variable: títulos en semi-expandida (`--font-display`, `font-stretch: var(--width-display)`), cuerpo en normal (`--font-body`).
-- IBM Plex Mono (`--font-mono`) solo para coordenadas, fechas y cifras de instrumento; cifras con `font-variant-numeric: tabular-nums`.
-- Escala `--text-xs|sm|md|lg|xl` (12/14/16/20/28). Texto de UI en español, frases en minúscula (sentence case), sin MAYÚSCULAS sostenidas ni «→» decorativos.
+- Archivo variable: títulos y cifras grandes en semi-expandida (`--font-display`, `--width-display`); cuerpo normal. Plex Mono solo para coordenadas y fechas.
+- Escala 12/14/16/20/28 (`--text-xs…xl`). Números comparables con `tabular-nums`. Sentence case, sin MAYÚSCULAS sostenidas.
 
-## Paneles y forma
-- Rieles acoplados a los bordes (izquierdo: capas y eventos; derecho: detalle). Sin vidrio, sin difuminados, sin sombras; radio único `--radius` (2 px); separadores de 1 px.
-- Nada de tarjetas idénticas: jerarquía por tipografía, filetes y listas de definición (`dl.facts`). El detalle lleva un filo izquierdo del color de su riesgo (`data-risk`).
-- Una sola animación de entrada (panel de detalle, `--motion-panel`); lo demás cambia sin transición. `prefers-reduced-motion` la anula.
+## Paneles y estados
+- Rieles acoplados, sin vidrio ni sombras; radio único `--radius`. Jerarquía con tipografía, filetes y `dl.facts`; listas `.entry-list`, nunca tarjetas idénticas.
+- Carga = `<Skeleton>`; vacío = `<EmptyState icon title action>` (ilustración + qué hacer); error = `<ErrorState message onRetry>`. Nunca un «Cargando…» suelto.
+- Formularios: `TextField`/`SelectField`/`ChoiceGroup`/`PhotoField`; acciones con efectos sobre otras personas, con `ConfirmDialog`.
+
+## Movimiento
+- Solo CSS y APIs del navegador (sin librerías). Animar **solo transform y opacity**; `transition-property` explícito (nunca `all`). Duraciones `--motion-fast|base|panel|ambient`, curvas `--ease-out|in-out`.
+- Todo respeta `prefers-reduced-motion`: CSS global en base.css + bloque final de motion.css; en JS usar `prefersReducedMotion()`/`useReducedMotion()` (`shared/ui/motion.ts`). Con movimiento reducido el contenido final aparece igual.
+- Repertorio: listas con `.stagger` + `style={stagger(i)}`; cifras con `<CountUp>` (el lector oye el valor final); cambios de selección/pestaña con `withViewTransition()`; mapa con `flyTo` y pulso de alertas por riesgo; radar en «Escanear ahora»; barra de tiempo en avisos (pausa en hover/foco). Un movimiento por intención; nada en bucle salvo esperas y el fondo del login.
 
 ## Mapa
-- Base: teselas raster OSM invertidas a oscuro con los tokens `--map-base-*` (sin proveedor ni token de pago; para producción cambiar de proveedor, el filtro sirve igual).
-- Zonas: línea fina hielo + relleno tenue. Anomalías: relleno por tipo, opacidad por confianza. Alertas: línea punteada y relleno en el color de su `risk_level`. Focos FIRMS: heatmap ámbar→rojo. Selección: contorno `--color-text` de 4 px.
-- Controles de MapLibre se re-tematizan en base.css; nada de colores por defecto de la librería.
+- Base OSM invertida con `--map-base-*`. Marcadores con icono en el centro de cada anomalía, alerta (flota encima, color de riesgo) y reporte; los polígonos siguen debajo.
+- Leyenda (`MapLegend`), escala y atribución siempre visibles. Estado compartible en la URL: `?capas=…&sel=anomalia:<id>` (`features/map/url-state.ts`, `router.replace`).
+- Móvil (< 52 rem): mapa completo + `<BottomSheet>` (Capas, Detalle, Impacto), arrastrable y operable con teclado.
 
-## Accesibilidad (mínimos no negociables)
-- Foco siempre visible (`:focus-visible`, anillo `--focus-ring-width` en `--color-focus`); jamás `outline: none` sin reemplazo.
-- Objetivos táctiles ≥ `--touch-target` (44 px). Navegación por teclado completa: todo lo que se hace con clic en el mapa tiene alternativa en una lista de botones.
-- Etiquetas visibles en formularios; errores junto al campo con `role="alert"`; estados de carga con `aria-busy`/`role="status"`.
-- Responsive: ≥ 52 rem tres columnas (rieles + mapa); por debajo, el mapa arriba y los paneles apilados debajo. Sin scroll horizontal.
-
-## Formularios y vistas de contenido
-- Usa `shared/ui`: `TextField`/`TextAreaField`/`SelectField`/`ChoiceGroup` (etiqueta visible, error junto al campo, `aria-invalid`), `PhotoField` (foto comprimida en el cliente) y `ConfirmDialog` (`<dialog>` modal) para acciones con efectos sobre otras personas.
-- Páginas privadas: `<div className="page">` con h1; `page-wide` para tableros. Listas con `.entry-list`, no cuadrículas de tarjetas. Menú y guarda salen de `shared/auth/access.ts`.
+## Accesibilidad (no negociable)
+- Foco visible siempre; objetivos ≥ `--touch-target`; todo lo del mapa tiene alternativa en lista de botones; etiquetas visibles; `role="status"`/`aria-busy` en esperas; patrón ARIA correcto en pestañas y diálogos.
 
 ## Al construir una vista nueva
-1. Lee esta skill y tokens.css; reutiliza `.panel`, `.facts`, `.risk-badge`, botones base.
-2. Estructura semántica primero (landmarks, encabezados), estilo después con tokens.
-3. Prohibido: gradientes morados/genéricos, cuadrículas de tarjetas iguales, acentos de color decorativos, emojis como iconos.
-4. Antes de terminar: lint, tipos, build y revisión de contraste de cualquier color nuevo.
+1. Lee esta skill y tokens.css; reutiliza `shared/ui` (iconos, estados, campos, diálogo, motion).
+2. Prohibido: gradientes morados o decorativos, tarjetas iguales, acentos de color sin significado, emojis, dependencias de animación.
+3. Antes de terminar: lint, tipos, build, contraste de colores nuevos y prueba con movimiento reducido.

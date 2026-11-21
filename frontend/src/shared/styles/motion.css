@@ -1,0 +1,466 @@
+/*
+ * Movimiento, panel inferior (móvil), leyenda y deslizador. Solo var(--token).
+ * Reglas: animar solo transform y opacity; nada de transition: all; todo se anula con
+ * prefers-reduced-motion (regla global en base.css y bloque final de este archivo).
+ */
+
+/* --- Micro-interacciones --- */
+button,
+a.button,
+.entry-list a,
+.choice,
+input,
+select,
+textarea {
+  transition-property: background-color, border-color, color, transform;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+button:active:not(:disabled),
+a.button:active {
+  transform: scale(0.97);
+}
+
+input:hover:not(:focus-visible),
+select:hover:not(:focus-visible),
+textarea:hover:not(:focus-visible) {
+  border-color: var(--color-text-muted);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--color-accent);
+}
+
+.entry-list a:hover {
+  transform: translateX(var(--space-1));
+}
+
+/* --- Aparición escalonada de listas --- */
+.stagger > * {
+  animation: rise var(--motion-base) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger-step));
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+}
+
+/* --- View Transitions (selección y pestañas, dentro de la página) --- */
+.detail-panel {
+  view-transition-name: detail-panel;
+}
+
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: var(--motion-base);
+  animation-timing-function: var(--ease-out);
+}
+
+/* --- «Escanear ahora»: barrido tipo radar --- */
+.radar {
+  position: relative;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: var(--border-width) solid currentcolor;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 65%, currentcolor 100%);
+  animation: radar-sweep var(--motion-loop) linear infinite;
+}
+
+.scan-button[aria-busy="true"] {
+  cursor: progress;
+}
+
+@keyframes radar-sweep {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* --- Avisos con barra de tiempo --- */
+.toast {
+  position: relative;
+  overflow: hidden;
+  animation: rise var(--motion-base) var(--ease-out) both;
+}
+
+.toast-timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--rail-edge-width);
+  background: var(--risk-critico);
+  transform-origin: left center;
+  animation: toast-countdown var(--toast-duration) linear forwards;
+}
+
+.toast:hover .toast-timer,
+.toast:focus-within .toast-timer {
+  animation-play-state: paused;
+}
+
+@keyframes toast-countdown {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* --- /login: cuadrícula cartográfica sutil --- */
+.auth-screen {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.carto-grid {
+  position: absolute;
+  inset: calc(-4 * var(--carto-grid-size));
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--color-border-control) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border-control) 1px, transparent 1px),
+    linear-gradient(var(--color-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+  background-size:
+    calc(4 * var(--carto-grid-size)) calc(4 * var(--carto-grid-size)),
+    calc(4 * var(--carto-grid-size)) calc(4 * var(--carto-grid-size)),
+    var(--carto-grid-size) var(--carto-grid-size),
+    var(--carto-grid-size) var(--carto-grid-size);
+  opacity: 0.35;
+  mask-image: radial-gradient(ellipse 60% 70% at 72% 42%, black 0%, transparent 75%);
+  animation: grid-drift var(--motion-ambient) linear infinite;
+}
+
+@keyframes grid-drift {
+  to {
+    transform: translate(calc(4 * var(--carto-grid-size)), calc(4 * var(--carto-grid-size)));
+  }
+}
+
+/* --- Deslizador antes/después --- */
+.ba-frame {
+  touch-action: pan-y; /* el arrastre horizontal es del deslizador; el vertical, del scroll */
+}
+
+.ba-frame .ba-after {
+  clip-path: inset(0 calc(100% - var(--ba-position)) 0 0);
+}
+
+.ba-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--ba-position);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-text);
+  pointer-events: none;
+}
+
+.ba-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  translate: -50% -50%;
+  border: 2px solid var(--color-text);
+  border-radius: 50%;
+  background: var(--color-surface);
+  transition-property: transform, background-color;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+.ba-knob::before,
+.ba-knob::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-left: 2px solid var(--color-text);
+  border-bottom: 2px solid var(--color-text);
+}
+
+.ba-knob::before {
+  left: 0.55rem;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.ba-knob::after {
+  right: 0.55rem;
+  transform: translateY(-50%) rotate(-135deg);
+}
+
+.ba-frame .ba-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+
+.ba-frame:hover .ba-knob {
+  transform: scale(1.08);
+}
+
+.ba-frame:has(.ba-range:active) .ba-knob {
+  transform: scale(0.94);
+  background: var(--color-accent);
+}
+
+.ba-frame:has(.ba-range:focus-visible) .ba-knob {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.ba-frame[data-hint="true"] .ba-knob {
+  animation: ba-nudge var(--motion-hint) var(--ease-in-out) 2;
+}
+
+@keyframes ba-nudge {
+  25% {
+    transform: translateX(calc(-1 * var(--space-4)));
+  }
+  75% {
+    transform: translateX(var(--space-4));
+  }
+}
+
+.ba-hint {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-3);
+  translate: -50% 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-overlay);
+  font-size: var(--text-xs);
+  pointer-events: none;
+  animation: rise var(--motion-base) var(--ease-out) both;
+}
+
+.ba-placeholder .skeleton-bar {
+  height: 100%;
+}
+
+/* --- Leyenda del mapa --- */
+.map-legend {
+  position: absolute;
+  left: var(--space-3);
+  bottom: var(--space-3);
+  z-index: var(--z-overlay);
+  max-width: var(--legend-width);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-overlay);
+  font-size: var(--text-sm);
+}
+
+.map-legend summary {
+  min-height: var(--space-6);
+  display: flex;
+  align-items: center;
+  font-family: var(--font-display);
+  font-stretch: var(--width-display);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.legend-title {
+  margin: var(--space-2) 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.map-legend ul {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legend-row[data-kind="fire"] .icon {
+  color: var(--map-anomaly-fire);
+}
+
+.legend-row[data-kind="deforestation"] .icon {
+  color: var(--map-anomaly-deforestation);
+}
+
+.legend-row[data-kind="report"] .icon {
+  color: var(--map-report);
+}
+
+.legend-row[data-kind="hotspot"] .icon {
+  color: var(--risk-medio);
+}
+
+.legend-row[data-kind="zone"] .icon {
+  color: var(--map-zone-line);
+}
+
+.panel .map-legend {
+  position: static;
+  max-width: none;
+  margin-top: var(--space-4);
+  padding: var(--space-4) 0 0;
+  border-width: var(--border-width) 0 0;
+  border-radius: 0;
+  background: none;
+}
+
+/* --- Panel inferior arrastrable (móvil) --- */
+.command-center.is-mobile {
+  position: relative;
+  display: block;
+  height: 100%;
+  overflow: hidden;
+}
+
+.command-center.is-mobile .map-area {
+  position: absolute;
+  inset: 0 0 var(--sheet-peek) 0;
+  height: auto;
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-sheet);
+  display: flex;
+  flex-direction: column;
+  height: var(--sheet-full);
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: var(--border-width) solid var(--color-border-control);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--color-surface);
+  transform: translateY(calc(var(--sheet-full) - var(--sheet-peek)));
+  transition: transform var(--motion-panel) var(--ease-out);
+}
+
+.sheet[data-snap="half"] {
+  transform: translateY(calc(var(--sheet-full) - var(--sheet-half)));
+}
+
+.sheet[data-snap="full"] {
+  transform: none;
+}
+
+.sheet[data-dragging="true"] {
+  transition: none;
+}
+
+.sheet-handle {
+  flex: none;
+  width: 100%;
+  min-height: var(--touch-target);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none; /* el gesto vertical mueve el panel, no la página */
+}
+
+.sheet-handle:active {
+  cursor: grabbing;
+  transform: none;
+}
+
+.sheet-handle span {
+  width: var(--space-6);
+  height: var(--space-1);
+  border-radius: var(--radius);
+  background: var(--color-border-control);
+}
+
+.sheet-tabs {
+  flex: none;
+  display: flex;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.sheet-tabs [role="tab"] {
+  flex: 1;
+  border: 0;
+  border-bottom: var(--rail-edge-width) solid transparent;
+  border-radius: 0;
+  color: var(--color-text-muted);
+}
+
+.sheet-tabs [role="tab"][aria-selected="true"] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.sheet-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* A media altura, la parte baja del panel queda fuera de la pantalla: se compensa con relleno
+   para que el scroll llegue al final del contenido. */
+.sheet[data-snap="half"] .sheet-panel {
+  padding-bottom: calc(var(--sheet-full) - var(--sheet-half));
+}
+
+.sheet .panel,
+.sheet .detail-panel {
+  border: 0;
+  overflow: visible;
+  animation: none;
+}
+
+/* --- Tipografía: cifras tabulares donde se comparan números --- */
+.facts dd,
+.entry-list .muted,
+.ranking,
+.board h2 .muted,
+.map-status,
+.scan-summary,
+.impact-figure,
+time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Movimiento reducido: lo esencial queda, sin animación --- */
+@media (prefers-reduced-motion: reduce) {
+  .carto-grid {
+    animation: none;
+  }
+
+  .sheet {
+    transition: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

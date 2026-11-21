@@ -33,7 +33,11 @@ export const formatDecimal = (value: number): string => decimalFormat.format(val
 
 // Las fechas puras (AAAA-MM-DD) se interpretan en UTC: formatearlas en hora local correría el día.
 const dayFormat = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: "UTC" });
-const instantFormat = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" });
+// Los instantes (con hora) se muestran en hora de Colombia, igual en servidor y navegador.
+const instantFormat = new Intl.DateTimeFormat("es-CO", {
+  dateStyle: "medium",
+  timeZone: "America/Bogota",
+});
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 export const formatDate = (iso: string): string =>

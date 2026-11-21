@@ -20,29 +20,24 @@ export interface NavItem {
   href: string;
   label: string;
   roles: readonly Role[];
-  /** false mientras la página no exista: no se muestra en el menú. */
-  available: boolean;
 }
 
-/** Fuente única de qué ve cada rol. El backend sigue siendo quien autoriza de verdad. */
+/**
+ * Fuente única de qué ve cada rol: el menú (navFor) y la guarda de ruta (rolesForPath) salen de
+ * esta tabla, así que no pueden contradecirse. El backend sigue siendo quien autoriza de verdad.
+ * Las páginas públicas (/login, /registro, /recuperar, /restablecer, /a/[id]) no están aquí.
+ */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { href: "/mapa", label: "Centro de comando", roles: ALL_ROLES, available: true },
-  {
-    href: "/inspecciones",
-    label: "Inspecciones",
-    roles: ["TECNICO", "AUTORIDAD", "ADMIN"],
-    available: false,
-  },
-  {
-    href: "/misiones",
-    label: "Misiones",
-    roles: ["CIUDADANO", "GUARDABOSQUES"],
-    available: false,
-  },
+  { href: "/mapa", label: "Centro de comando", roles: ALL_ROLES },
+  { href: "/reportar", label: "Reportar", roles: ALL_ROLES },
+  { href: "/misiones", label: "Misiones", roles: ["CIUDADANO", "GUARDABOSQUES"] },
+  { href: "/inspecciones", label: "Inspecciones", roles: ["TECNICO", "AUTORIDAD", "ADMIN"] },
+  { href: "/ranking", label: "Ranking", roles: ALL_ROLES },
+  { href: "/perfil", label: "Mi perfil", roles: ALL_ROLES },
 ];
 
 export function navFor(role: Role): NavItem[] {
-  return NAV_ITEMS.filter((item) => item.available && item.roles.includes(role));
+  return NAV_ITEMS.filter((item) => item.roles.includes(role));
 }
 
 /** Roles permitidos en una ruta según la tabla de navegación (sin entrada: cualquier sesión). */

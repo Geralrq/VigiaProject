@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import {
   useAnomalyImages,
   useConfirmAnomaly,
   useZoneReadings,
 } from "@/features/monitoring/api/queries";
 import type { Role } from "@/shared/api/types";
+import { ConfirmDialog } from "@/shared/ui/ConfirmDialog";
 import { ANOMALY_STATE_LABELS, ANOMALY_TYPE_LABELS, formatDate, percent } from "../labels";
 import type { DetailModel } from "../selection";
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
@@ -23,6 +25,7 @@ export function DetailPanel({ detail, role, onClose }: Props) {
   const images = useAnomalyImages(detail.anomalyId);
   const readings = useZoneReadings(detail.zoneId);
   const confirm = useConfirmAnomaly();
+  const [confirming, setConfirming] = useState(false);
 
   const canConfirm =
     role === "ADMIN" && (detail.state === "DETECTADA" || detail.state === "EN_VERIFICACION");
@@ -116,13 +119,29 @@ export function DetailPanel({ detail, role, onClose }: Props) {
             <button
               type="button"
               className="primary"
-              onClick={() => confirm.mutate(detail.anomalyId)}
+              onClick={() => setConfirming(true)}
               disabled={confirm.isPending}
-              aria-busy={confirm.isPending}
+              aria-haspopup="dialog"
             >
-              {confirm.isPending ? "Confirmando…" : "Confirmar anomalía"}
+              Confirmar anomalía
             </button>
           )}
+          <ConfirmDialog
+            open={confirming}
+            title="¿Confirmar esta anomalía?"
+            confirmLabel={confirm.isPending ? "Confirmando…" : "Confirmar y alertar"}
+            busy={confirm.isPending}
+            onCancel={() => setConfirming(false)}
+            onConfirm={() =>
+              confirm.mutate(detail.anomalyId, { onSettled: () => setConfirming(false) })
+            }
+          >
+            <p>
+              Se generará una alerta y se notificará a las personas que están dentro de la zona de
+              riesgo y a las autoridades.
+            </p>
+            <p>Confirma solo si ya verificaste que la anomalía es real. No se puede deshacer.</p>
+          </ConfirmDialog>
           {confirm.isSuccess && <p role="status">Anomalía confirmada. Se generó la alerta.</p>}
           {confirm.isError && (
             <p role="alert" className="error">

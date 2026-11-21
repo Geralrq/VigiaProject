@@ -2,7 +2,9 @@
 
 from uuid import UUID
 
+from app.shared.application.ports.user_directory import UserSummary
 from app.shared.domain.profile import GeoPoint, Profile, ProfileChanges
+from app.shared.domain.user import Role
 from tests.fakes import InMemoryProfileRepository
 
 
@@ -37,3 +39,16 @@ class InMemoryMyProfileRepository:
             else:
                 self.locations[user_id] = changes.location
         return self.get(user_id)
+
+
+class InMemoryUserDirectory:
+    def __init__(self, auth_profiles: InMemoryProfileRepository) -> None:
+        self._auth = auth_profiles
+
+    def find_by_role(self, role: Role) -> list[UserSummary]:
+        found = [
+            UserSummary(user_id, self._auth.names.get(user_id, "Usuario"))
+            for user_id, user_role in self._auth.roles.items()
+            if user_role is role
+        ]
+        return sorted(found, key=lambda u: (u.name, str(u.id)))

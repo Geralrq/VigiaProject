@@ -145,6 +145,7 @@ from app.shared.adapters.inbound.health import router as health_router
 from app.shared.adapters.inbound.me_router import build_me_router
 from app.shared.adapters.inbound.problems import register_problem_handlers
 from app.shared.adapters.inbound.security import build_auth_dependencies, build_cron_guard
+from app.shared.adapters.inbound.users_router import build_users_router
 from app.shared.adapters.outbound.auth.jwks_token_verifier import (
     JwksTokenVerifier,
     build_jwk_client,
@@ -157,13 +158,16 @@ from app.shared.adapters.outbound.persistence.my_profile_repository import (
 from app.shared.adapters.outbound.persistence.profile_repository import (
     SqlAlchemyProfileRepository,
 )
+from app.shared.adapters.outbound.persistence.user_directory import SqlAlchemyUserDirectory
 from app.shared.adapters.outbound.storage.in_memory_storage import InMemoryStorage
 from app.shared.adapters.outbound.storage.supabase_storage import SupabaseStorageAdapter
 from app.shared.application.ports.auth import ProfileRepository, TokenVerifier
 from app.shared.application.ports.events import EventPublisher
 from app.shared.application.ports.profile import MyProfileRepository
 from app.shared.application.ports.storage import StoragePort
+from app.shared.application.ports.user_directory import UserDirectory
 from app.shared.application.use_cases.authenticate_user import AuthenticateUser
+from app.shared.application.use_cases.list_users import ListUsersByRole
 from app.shared.application.use_cases.my_profile import GetMyProfile, UpdateMyProfile
 from app.shared.domain.events import AlertCreated, AnomalyConfirmed, AnomalyDetected
 from app.shared.settings import get_settings
@@ -232,6 +236,19 @@ def provide_update_my_profile(
     profiles: Annotated[MyProfileRepository, Depends(provide_my_profile_repository)],
 ) -> UpdateMyProfile:
     return UpdateMyProfile(profiles)
+
+
+# --- shared: user directory (id and name only) ------------------------------------------
+
+
+def provide_user_directory(session: SessionDep) -> UserDirectory:
+    return SqlAlchemyUserDirectory(session)
+
+
+def provide_list_users(
+    users: Annotated[UserDirectory, Depends(provide_user_directory)],
+) -> ListUsersByRole:
+    return ListUsersByRole(users)
 
 
 # --- monitoring: zones ----------------------------------------------------------------
@@ -707,6 +724,7 @@ def create_app() -> FastAPI:
     app.include_router(
         build_me_router(auth, provide_get_my_profile, provide_update_my_profile), prefix="/api"
     )
+    app.include_router(build_users_router(auth, provide_list_users), prefix="/api")
     app.include_router(
         build_zones_router(
             auth, provide_list_zones, provide_create_zone, provide_get_zone_readings

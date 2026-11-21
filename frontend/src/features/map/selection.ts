@@ -5,7 +5,6 @@ import type {
   AnomalyType,
   RiskLevel,
 } from "@/shared/api/types";
-import type { Bbox } from "@/shared/geo";
 
 export type SelectionKind = "anomaly" | "alert";
 
@@ -64,25 +63,4 @@ export function fromAlert(feature: AlertFeature): DetailModel {
     detectedAt: p.detected_at,
     alertCreatedAt: p.created_at,
   };
-}
-
-/** Caja envolvente de una geometría GeoJSON (Polygon, MultiPolygon o Point). */
-export function geometryBbox(geometry: object): Bbox | null {
-  let minLon = Infinity;
-  let minLat = Infinity;
-  let maxLon = -Infinity;
-  let maxLat = -Infinity;
-  const visit = (node: unknown): void => {
-    if (!Array.isArray(node)) return;
-    if (typeof node[0] === "number" && typeof node[1] === "number") {
-      minLon = Math.min(minLon, node[0]);
-      maxLon = Math.max(maxLon, node[0]);
-      minLat = Math.min(minLat, node[1]);
-      maxLat = Math.max(maxLat, node[1]);
-      return;
-    }
-    node.forEach(visit);
-  };
-  visit("coordinates" in geometry ? geometry.coordinates : null);
-  return Number.isFinite(minLon) ? [minLon, minLat, maxLon, maxLat] : null;
 }

@@ -39,6 +39,10 @@ Usa `<RiskBadge level>` (features/map): glifo de 1–4 barras + etiqueta en text
 - Etiquetas visibles en formularios; errores junto al campo con `role="alert"`; estados de carga con `aria-busy`/`role="status"`.
 - Responsive: ≥ 52 rem tres columnas (rieles + mapa); por debajo, el mapa arriba y los paneles apilados debajo. Sin scroll horizontal.
 
+## Formularios y vistas de contenido
+- Usa `shared/ui`: `TextField`/`TextAreaField`/`SelectField`/`ChoiceGroup` (etiqueta visible, error junto al campo, `aria-invalid`), `PhotoField` (foto comprimida en el cliente) y `ConfirmDialog` (`<dialog>` modal) para acciones con efectos sobre otras personas.
+- Páginas privadas: `<div className="page">` con h1; `page-wide` para tableros. Listas con `.entry-list`, no cuadrículas de tarjetas. Menú y guarda salen de `shared/auth/access.ts`.
+
 ## Al construir una vista nueva
 1. Lee esta skill y tokens.css; reutiliza `.panel`, `.facts`, `.risk-badge`, botones base.
 2. Estructura semántica primero (landmarks, encabezados), estilo después con tokens.

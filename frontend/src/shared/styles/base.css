@@ -51,6 +51,7 @@ select {
 }
 
 input[type="checkbox"],
+input[type="radio"],
 input[type="range"] {
   accent-color: var(--color-accent);
 }
@@ -120,6 +121,7 @@ button:disabled {
   opacity: 0.55;
 }
 
+input:not([type]),
 input[type="text"],
 input[type="email"],
 input[type="password"] {
@@ -166,12 +168,6 @@ label {
 
 .auth-page h1 {
   font-size: var(--text-xl);
-}
-
-.auth-page .lede {
-  margin: var(--space-3) 0 var(--space-5);
-  max-width: var(--measure);
-  color: var(--color-text-muted);
 }
 
 .page-center {
@@ -640,6 +636,10 @@ label {
 
 /* --- Pantallas angostas: mapa arriba, paneles apilados debajo --- */
 @media (max-width: 52rem) {
+  .auth-page {
+    margin-left: 0;
+  }
+
   .command-center,
   .command-center.has-detail {
     display: flex;

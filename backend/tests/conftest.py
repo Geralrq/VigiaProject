@@ -45,6 +45,7 @@ from app.bootstrap import (
     provide_telegram_chat,
     provide_telegram_webhook_secret,
     provide_token_verifier,
+    provide_user_directory,
     provide_zone_repository,
 )
 from app.monitoring.adapters.outbound.fires.demo_fire_adapter import DemoFireHotspotAdapter
@@ -78,7 +79,7 @@ from tests.fakes_inspections import (
     InMemoryInspectionRepository,
     InMemoryTechnicianDirectory,
 )
-from tests.fakes_profile import InMemoryMyProfileRepository
+from tests.fakes_profile import InMemoryMyProfileRepository, InMemoryUserDirectory
 from tests.fakes_reports import (
     FakeCandidateFinder,
     InMemoryMissionRepository,
@@ -228,6 +229,11 @@ def my_profiles(profiles: InMemoryProfileRepository) -> InMemoryMyProfileReposit
 
 
 @pytest.fixture
+def users(profiles: InMemoryProfileRepository) -> InMemoryUserDirectory:
+    return InMemoryUserDirectory(profiles)
+
+
+@pytest.fixture
 def inspections(
     alerts: InMemoryAlertRepository,
     anomalies: InMemoryAnomalyRepository,
@@ -305,6 +311,7 @@ def client(
     candidates: FakeCandidateFinder,
     scores: InMemoryScoreRepository,
     my_profiles: InMemoryMyProfileRepository,
+    users: InMemoryUserDirectory,
     inspections: InMemoryInspectionRepository,
     technicians: InMemoryTechnicianDirectory,
     evidence: FakeEvidenceSource,
@@ -335,6 +342,7 @@ def client(
         provide_critical_confidence: lambda: 0.75,
         provide_storage: lambda: storage,
         provide_my_profile_repository: lambda: my_profiles,
+        provide_user_directory: lambda: users,
         provide_inspection_repository: lambda: inspections,
         provide_technician_directory: lambda: technicians,
         provide_evidence_source: lambda: evidence,

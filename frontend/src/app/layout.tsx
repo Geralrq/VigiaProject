@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Providers } from "@/shared/providers";
 import "@/shared/styles/tokens.css";
 import "@/shared/styles/base.css";
+import "@/shared/styles/views.css";
 
 // Archivo con eje de ancho (títulos semi-expandidos); Plex Mono solo para instrumentos.
 const archivo = Archivo({
@@ -22,6 +23,9 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Vigía",
   description: "Inteligencia ambiental y alerta temprana",
+  applicationName: "Vigía",
+  icons: { apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Vigía", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = { colorScheme: "dark", themeColor: "#0c1512" };

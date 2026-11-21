@@ -7,14 +7,13 @@ import { useMe } from "@/features/auth/api/useMe";
 import { useAnomalies, useHotspots, useZones } from "@/features/monitoring/api/queries";
 import { NotificationToasts } from "@/features/notifications/components/NotificationToasts";
 import { useReports } from "@/features/reports/api/queries";
-import type { Bbox } from "@/shared/geo";
+import { geometryBbox, type Bbox } from "@/shared/geo";
 import { toMapCollection, zonesToCollection } from "../geojson";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { ANOMALY_TYPE_LABELS, formatNumber, percent } from "../labels";
 import {
   fromAlert,
   fromAnomaly,
-  geometryBbox,
   type DetailModel,
   type Selection,
 } from "../selection";
